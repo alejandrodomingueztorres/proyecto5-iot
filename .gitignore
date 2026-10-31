@@ -1,0 +1,23 @@
+# ===== Secretos: NUNCA al repositorio =====
+.env
+.env.*
+!.env.example
+*.key
+*.csr
+*.srl
+backend/mosquitto/config/passwd
+**/*_cred.json
+
+# ===== Datos que generan los contenedores =====
+backend/**/data/
+
+# ===== Archivos pesados o con datos sensibles =====
+*.pcap
+*.pcapng
+*.mp4
+
+# ===== Sistema y editores =====
+.DS_Store
+Thumbs.db
+.vscode/
+__pycache__/
