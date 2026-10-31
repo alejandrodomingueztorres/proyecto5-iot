@@ -85,4 +85,4 @@
 
 | Fecha | Cambio | Motivo | Aprobado por |
 |---|---|---|---|
-| 2026-10-31 | Versión inicial, tomada del plan de trabajo | Arranque del proyecto | Aprobado |
+| 2026-10-31 | Versión inicial, tomada del plan de trabajo | Arranque del proyecto | Equipo de trabajo |
