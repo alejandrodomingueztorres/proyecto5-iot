@@ -29,7 +29,8 @@ En el portal de Azure: **Máquinas virtuales → Crear**.
 | Campo | Valor |
 |---|---|
 | Imagen | Ubuntu Server 24.04 LTS |
-| Tamaño | Standard_B2s (2 vCPU, 4 GB). Con menos memoria no alcanza para los 4 servicios y la prueba de escalado |
+| Región | Chile Central (la más cercana de las que permite Azure for Students UAO) |
+| Tamaño | Standard_B2als_v2 (2 vCPU, 4 GB). Con menos memoria no alcanza para los 4 servicios y la prueba de escalado. El B2s no existe en Chile Central |
 | Autenticación | Clave pública SSH, usuario `azureuser` |
 | Puertos de entrada | Solo SSH (22) por ahora |
 
@@ -120,6 +121,22 @@ docker compose logs mosquitto
 **Cómo comprobarlo:**
 - `ps` muestra los 4 servicios en `running`.
 - El log de Mosquitto dice `Opening ipv4 listen socket on port 8883` y no muestra errores de certificados ni de passwd.
+
+## La VM queda apagada cuando no se usa
+
+Para no gastar el crédito de Azure for Students, la VM `vm-iot-backend`
+(grupo `rg-proyecto5-iot`) se deja **desasignada** y se prende solo para
+trabajar o probar. Desasignada no cobra la VM, solo el disco y la IP fija, y la
+IP `68.211.147.97` no cambia. Al prenderla, el stack arranca solo.
+
+```powershell
+.\backend\azure\vm-prender.ps1   # antes de trabajar
+.\backend\azure\vm-apagar.ps1    # al terminar
+```
+
+Apagar desde Ubuntu (`sudo shutdown`) no basta: Azure sigue cobrando la VM
+hasta que se desasigna. Si un compañero necesita el broker, avisa al Rol 2
+para que la prenda.
 
 ## 8. Entregar a los demás roles
 

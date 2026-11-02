@@ -8,4 +8,4 @@ $vm = 'vm-iot-backend'
 
 az vm deallocate -g $grupo -n $vm
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-az vm get-instance-view -g $grupo -n $vm --query "instanceView.statuses[?starts_with(code,'PowerState')].displayStatus" -o tsv
+az vm show -d -g $grupo -n $vm --query powerState -o tsv
