@@ -1,0 +1,8 @@
+# Este es el archivo que BalenaCloud usa con `balena push`.
+# Las variables (DEVICE_ID, MQTT_USER, MQTT_PASSWORD, BROKER_HOST, BROKER_PORT,
+# CA_CERT_PATH, PUBLISH_INTERVAL) NO van aqui: se definen en el dashboard de Balena
+# (de flota o de cada dispositivo) y llegan al contenedor como variables de entorno.
+services:
+  simulador:
+    build: .
+    restart: always
