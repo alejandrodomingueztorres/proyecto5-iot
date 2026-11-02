@@ -138,6 +138,19 @@ Apagar desde Ubuntu (`sudo shutdown`) no basta: Azure sigue cobrando la VM
 hasta que se desasigna. Si un compañero necesita el broker, avisa al Rol 2
 para que la prenda.
 
+Por si a alguien se le olvida, la VM se desasigna sola **todas las noches a las
+11 pm (hora de Colombia)** con [autoapagado.sh](../backend/azure/autoapagado.sh)
+y cron. El apagado automático de Azure no existe en Chile Central, por eso la
+VM tiene una identidad administrada con el rol *Virtual Machine Contributor*
+**solo sobre sí misma**. Para instalarlo en una VM nueva:
+
+```bash
+az vm identity assign -g rg-proyecto5-iot -n vm-iot-backend --role "Virtual Machine Contributor" --scope <id-de-la-vm>
+sudo install -m 755 azure/autoapagado.sh /usr/local/bin/autoapagado.sh
+echo '0 4 * * * root /usr/local/bin/autoapagado.sh' | sudo tee /etc/cron.d/autoapagado
+sudo /usr/local/bin/autoapagado.sh --probar   # debe imprimir "VM running"
+```
+
 ## 8. Entregar a los demás roles
 
 | A quién | Qué | Por dónde |
