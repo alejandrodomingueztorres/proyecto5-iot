@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 
+print("simulador v2",datetime.now(timezone.utc).isoformat(timespec="seconds"), flush=True)
+
 DEVICE_ID = os.environ["DEVICE_ID"]
 MQTT_USER = os.environ.get("MQTT_USER", DEVICE_ID)
 MQTT_PASSWORD = os.environ["MQTT_PASSWORD"]
