@@ -269,6 +269,39 @@ Esperado: solo `8883 open`; los demás `filtered`.
 Las capturas van en `docs/evidencias/img/R5.2/` y el resultado de cada prueba
 en [evidencias/R5.2.md](evidencias/R5.2.md).
 
+## 10. Prueba de escalado (con el Rol 5)
+
+[escalado.sh](../backend/escalado/escalado.sh) hace cada escenario de
+[requerimientos.md](requerimientos.md) (PE.1 a PE.4) en un solo comando, en la
+VM y desde `backend/`:
+
+```bash
+sudo bash escalado/escalado.sh 0     # PE.1: línea base, solo dev01 y dev02 (5 min)
+sudo bash escalado/escalado.sh 10    # PE.2: 10 simuladores extra (5 min)
+sudo bash escalado/escalado.sh 50    # PE.3: 50 simuladores extra (5 min)
+```
+
+Qué hace:
+- Construye la imagen del simulador desde `device/` (el mismo código de los
+  dispositivos) y lanza los simuladores como `sim001`, `sim002`, …
+- Crea el usuario MQTT temporal `escalado` y lo borra al terminar. Mosquitto
+  recarga usuarios y permisos con SIGHUP, así que **dev01 y dev02 no se
+  desconectan**.
+- Mide `docker stats` cada 15 s, los mensajes que llegan al broker y los puntos
+  que Node-RED guarda en InfluxDB (PE.4), y calcula el porcentaje de pérdida.
+- Al final, aunque se corte con Ctrl+C, borra los simuladores, el usuario, su
+  estado retenido y sus puntos en InfluxDB (para no dejar dispositivos fantasma
+  en Grafana). Con `--conservar-datos` deja los puntos.
+
+Los resultados quedan en `~/escalado-resultados/<fecha>-N<n>/`: `resumen.txt`
+(tablas para [evidencias/escalado.md](evidencias/escalado.md)),
+`docker-stats.csv` y `mensajes.txt`.
+
+**Antes de correrlo:** dev01 y dev02 publicando (para la línea base), el flujo
+de Node-RED guardando en `lecturas` (para la pérdida hasta InfluxDB) y el
+dashboard abierto para la captura. Para probar el script sin ocupar 5 minutos:
+`sudo bash escalado/escalado.sh 2 1` (2 simuladores, 1 minuto).
+
 ## Problemas frecuentes
 
 - **Mosquitto se reinicia en bucle.** Ver `docker compose logs mosquitto`. Casi
@@ -281,8 +314,14 @@ en [evidencias/R5.2.md](evidencias/R5.2.md).
   `openssl x509 -in mosquitto/config/certs/server.crt -noout -ext subjectAltName`.
 - **Timeout desde afuera.** Falta la regla del 8883 en el NSG.
 - **Cambié `acl.conf` o un usuario y no toma efecto.** `crear-usuario.sh`
-  reinicia Mosquitto solo; tras editar `acl.conf`, ejecutar
-  `docker compose restart mosquitto`.
+  recarga Mosquitto solo; tras editar `acl.conf`, ejecutar
+  `docker compose kill -s SIGHUP mosquitto`. Recarga sin desconectar a nadie;
+  `docker compose restart mosquitto` también sirve, pero corta a todos los
+  dispositivos unos segundos.
+- **`git pull` en la VM falla con `Permission denied` en `certs/`.** La carpeta
+  la creó el script de certificados como root. Arreglo:
+  `sudo chown azureuser:azureuser mosquitto/config/certs` (la `server.key` sigue
+  siendo solo del usuario de Mosquitto).
 - **Cambié el `.env` de InfluxDB y no pasa nada.** El setup inicial de InfluxDB
   solo corre con el volumen vacío. Para empezar de cero:
   `docker compose down && docker volume rm backend_influxdb_data backend_influxdb_config`

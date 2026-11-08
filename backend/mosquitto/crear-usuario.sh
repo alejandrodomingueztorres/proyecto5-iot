@@ -55,6 +55,8 @@ fi
 chown "$MOSQUITTO_UID:$MOSQUITTO_UID" "$PASSWD"
 chmod 600 "$PASSWD"
 
+# SIGHUP: Mosquitto recarga passwd y acl.conf sin desconectar a nadie.
 if docker compose -f ../docker-compose.yml ps --status running --services 2>/dev/null | grep -qx mosquitto; then
-  docker compose -f ../docker-compose.yml restart mosquitto
+  docker compose -f ../docker-compose.yml kill -s SIGHUP mosquitto >/dev/null 2>&1
+  echo "Mosquitto recargó usuarios y permisos."
 fi

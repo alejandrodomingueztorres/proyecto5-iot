@@ -148,7 +148,8 @@ Ejemplo con `dev04`. **No se toca Node-RED**: su suscripción `iot/+/+` ya lo in
      user dev04
      topic write iot/dev04/#
      ```
-   - Crear el usuario. El script muestra la clave una sola vez y reinicia Mosquitto:
+   - Crear el usuario. El script muestra la clave una sola vez y recarga Mosquitto
+     sin desconectar a los demás:
      ```bash
      sudo bash mosquitto/crear-usuario.sh dev04
      ```
