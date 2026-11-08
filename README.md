@@ -30,8 +30,8 @@ Las pruebas de cada uno están en [docs/requerimientos.md](docs/requerimientos.m
 | R5.2 | Publicación MQTT con TLS y autenticación | Mensajes publicados; cifrado verificado con Wireshark o logs | Rol 2 | ⬜ | [Ver](docs/evidencias/R5.2.md) |
 | R5.3 | Esquema de topics documentado | Nuevos dispositivos adoptados sin modificar el consumidor | Rol 2 · Rol 5 | ⬜ | [Ver](docs/evidencias/R5.3.md) |
 | R5.4 | Procesamiento Node-RED → InfluxDB | Datos almacenados; reglas verificadas con datos de prueba | Rol 3 | ⬜ | [Ver](docs/evidencias/R5.4.md) |
-| R5.5 | Dashboard en Grafana | Tiempo real; 5+ paneles con datos reales | Rol 4 | ⬜ | [Ver](docs/evidencias/R5.5.md) |
-| R5.6 | Alertas por umbral | Recibida en menos de 30 s; demostrada en vivo | Rol 4 · Rol 3 | ⬜ | [Ver](docs/evidencias/R5.6.md) |
+| R5.5 | Dashboard en Grafana | Tiempo real; 5+ paneles con datos reales | Rol 4 | 🟨 | [Ver](docs/evidencias/R5.5.md) |
+| R5.6 | Alertas por umbral | Recibida en menos de 30 s; demostrada en vivo | Rol 4 · Rol 3 | 🟨 | [Ver](docs/evidencias/R5.6.md) |
 | R5.7 | Detección de dispositivo offline | Alerta tras 5 min sin datos; recuperación detectada | Rol 4 · Rol 1 | 🟨 | [Ver](docs/evidencias/R5.7.md) |
 | R5.8 | Incorporación de un tercer dispositivo | Integrado en menos de 30 min con la guía; visible en el dashboard | Rol 5 · Rol 1 | ⬜ | [Ver](docs/evidencias/R5.8.md) |
 | — | Escalado (objetivo del proyecto) | Consumo con 10 y 50 dispositivos medido | Rol 5 · Rol 2 | ⬜ | [Ver](docs/evidencias/escalado.md) |
