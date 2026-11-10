@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 
-print("simulador v2",datetime.now(timezone.utc).isoformat(timespec="seconds"), flush=True)
+print("simulador v3", datetime.now(timezone.utc).isoformat(timespec="seconds"), flush=True)
 
 DEVICE_ID = os.environ["DEVICE_ID"]
 MQTT_USER = os.environ.get("MQTT_USER", DEVICE_ID)
@@ -32,6 +32,21 @@ PUBLISH_INTERVAL = float(os.environ.get("PUBLISH_INTERVAL", "5"))
 # Rango normal del simulador (contrato, seccion 1): por debajo del umbral de alerta (30 C).
 TEMP_MIN, TEMP_MAX = 20.0, 29.0
 HUM_MIN, HUM_MAX = 40.0, 80.0
+
+# Opcional, solo para demos y pruebas de alertas (R5.6): si se define TEMP_FORZADA en Balena
+# (por ejemplo 32), la temperatura publicada es ese valor +-0.5 en vez del rango normal.
+# Sin la variable, el simulador se comporta igual que siempre. Se limita al rango fisico
+# valido del contrato (-20 a 80 C) para no generar mensajes que Node-RED descartaria.
+TEMP_FORZADA = None
+_forzada = os.environ.get("TEMP_FORZADA", "").strip()
+if _forzada:
+    try:
+        _valor = float(_forzada)
+        if not -1000.0 < _valor < 1000.0:  # tambien descarta nan e inf
+            raise ValueError(_forzada)
+        TEMP_FORZADA = min(80.0, max(-20.0, _valor))
+    except ValueError:
+        print(f"TEMP_FORZADA='{_forzada}' no es un numero: se ignora", flush=True)
 
 STATUS_TOPIC = f"iot/{DEVICE_ID}/status"
 
@@ -52,6 +67,8 @@ def on_connect(client, userdata, flags, reason_code, properties):
         log(f"conexion rechazada: {reason_code}")
         return
     log(f"conectado a {BROKER_HOST}:{BROKER_PORT}")
+    if TEMP_FORZADA is not None:
+        log(f"AVISO: TEMP_FORZADA activa ({TEMP_FORZADA} C), la temperatura no es la normal")
     # Se publica aqui (y no una sola vez al arrancar) para que tras cada reconexion
     # el estado retenido vuelva a ser "online".
     client.publish(STATUS_TOPIC, "online", qos=1, retain=True)
@@ -86,8 +103,12 @@ def main():
     while not stop.is_set():
         if connected.is_set():
             ts = now_utc()
+            if TEMP_FORZADA is None:
+                temperatura = random.uniform(TEMP_MIN, TEMP_MAX)
+            else:
+                temperatura = min(80.0, max(-20.0, TEMP_FORZADA + random.uniform(-0.5, 0.5)))
             lecturas = [
-                ("temperatura", "C", random.uniform(TEMP_MIN, TEMP_MAX)),
+                ("temperatura", "C", temperatura),
                 ("humedad", "%", random.uniform(HUM_MIN, HUM_MAX)),
             ]
             for sensor, unit, value in lecturas:
