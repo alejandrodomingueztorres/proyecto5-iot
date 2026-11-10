@@ -1,0 +1,241 @@
+[
+    {
+        "id": "f6f2187d.f17ca8",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "p5tab0000000001",
+        "type": "tab",
+        "label": "Proyecto 5 - Ingesta",
+        "disabled": false,
+        "info": "Rol 3 (R5.4): MQTT iot/+/+ -> validación -> InfluxDB (lecturas, estado, descartados). Ver docs/contrato.md."
+    },
+    {
+        "id": "p5tlsconfig0001",
+        "type": "tls-config",
+        "name": "CA del broker",
+        "cert": "",
+        "key": "",
+        "ca": "${MQTT_CA_CERT_PATH}",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": true,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "p5influxcfg0001",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": "8086",
+        "protocol": "http",
+        "database": "database",
+        "name": "InfluxDB (contrato)",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "${INFLUXDB_URL}",
+        "timeout": "10",
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "p5mqttbroker001",
+        "type": "mqtt-broker",
+        "name": "Mosquitto (contrato)",
+        "broker": "${MQTT_BROKER_HOST}",
+        "port": "${MQTT_BROKER_PORT}",
+        "tls": "p5tlsconfig0001",
+        "clientid": "nodered-p5",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "4",
+        "keepalive": "30",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "3cc11d24.ff01a2",
+        "type": "comment",
+        "z": "f6f2187d.f17ca8",
+        "name": "WARNING: please check you have started this container with a volume that is mounted to /data\\n otherwise any flow changes are lost when you redeploy or upgrade the container\\n (e.g. upgrade to a more recent node-red docker image).\\n  If you are using named volumes you can ignore this warning.\\n Double click or see info side panel to learn how to start Node-RED in Docker to save your work",
+        "info": "\nTo start docker with a bind mount volume (-v option), for example:\n\n```\ndocker run -it -p 1880:1880 -v /home/user/node_red_data:/data --name mynodered nodered/node-red\n```\n\nwhere `/home/user/node_red_data` is a directory on your host machine where you want to store your flows.\n\nIf you do not do this then you can experiment and redploy flows, but if you restart or upgrade the container the flows will be disconnected and lost. \n\nThey will still exist in a hidden data volume, which can be recovered using standard docker techniques, but that is much more complex than just starting with a named volume as described above.",
+        "x": 350,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "p5mqttin0000001",
+        "type": "mqtt in",
+        "z": "p5tab0000000001",
+        "name": "iot/+/+",
+        "topic": "iot/+/+",
+        "qos": "1",
+        "datatype": "utf8",
+        "broker": "p5mqttbroker001",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 110,
+        "y": 120,
+        "wires": [
+            [
+                "p5validar000001"
+            ]
+        ]
+    },
+    {
+        "id": "p5validar000001",
+        "type": "function",
+        "z": "p5tab0000000001",
+        "name": "Validar y transformar",
+        "func": "// Valida cada mensaje según docs/contrato.md y lo prepara para InfluxDB.\n// Salida 1: lecturas válidas  ->  medición \"lecturas\"\n// Salida 2: estado online/offline  ->  medición \"estado\"\n// Salida 3: mensajes inválidos  ->  medición \"descartados\"\nconst RANGOS = {\n    temperatura: { unit: \"C\", min: -20, max: 80 },\n    humedad:     { unit: \"%\", min: 0,   max: 100 }\n};\nconst UMBRAL = Number(env.get(\"UMBRAL_TEMPERATURA\") || 30);\nconst TS_UTC = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/;\n\nconst partes = String(msg.topic || \"\").split(\"/\");\nconst deviceId = partes[1] || \"desconocido\";\nconst tipo = partes[2] || \"\";\nconst texto = String(msg.payload);\n\nfunction descartar(motivo) {\n    node.warn(\"Descartado \" + msg.topic + \": \" + motivo);\n    return [null, null, {\n        measurement: \"descartados\",\n        payload: [\n            { motivo: motivo, payload: texto.slice(0, 200) },\n            { device_id: deviceId, topic: String(msg.topic) }\n        ]\n    }];\n}\n\nif (partes.length !== 3 || partes[0] !== \"iot\") {\n    return descartar(\"topic fuera del esquema iot/{device_id}/{sensor}\");\n}\n\n// --- Estado (Last Will y avisos del simulador) ---\nif (tipo === \"status\") {\n    const estado = texto.trim().toLowerCase();\n    if (estado !== \"online\" && estado !== \"offline\") {\n        return descartar(\"estado desconocido: \" + estado);\n    }\n    return [null, {\n        measurement: \"estado\",\n        payload: [{ online: estado === \"online\" ? 1 : 0 }, { device_id: deviceId }]\n    }, null];\n}\n\n// --- Lecturas ---\nlet d;\ntry {\n    d = JSON.parse(texto);\n} catch (e) {\n    return descartar(\"no es JSON\");\n}\nif (d === null || typeof d !== \"object\" || Array.isArray(d)) return descartar(\"el payload no es un objeto JSON\");\n\nfor (const campo of [\"device_id\", \"sensor\", \"value\", \"unit\", \"ts\"]) {\n    if (!(campo in d)) return descartar(\"falta el campo \" + campo);\n}\nconst regla = RANGOS[d.sensor];\nif (!regla) return descartar(\"sensor desconocido: \" + d.sensor);\nif (d.device_id !== deviceId) return descartar(\"device_id no coincide con el topic\");\nif (d.sensor !== tipo) return descartar(\"sensor no coincide con el topic\");\nif (typeof d.value !== \"number\" || !isFinite(d.value)) return descartar(\"value no es numérico\");\nif (d.unit !== regla.unit) return descartar(\"unidad incorrecta para \" + d.sensor + \": \" + d.unit);\nif (typeof d.ts !== \"string\" || !TS_UTC.test(d.ts) || isNaN(Date.parse(d.ts))) return descartar(\"ts no es UTC ISO 8601\");\nif (d.value < regla.min || d.value > regla.max) {\n    return descartar(\"fuera de rango: \" + d.value + \" (\" + regla.min + \" a \" + regla.max + \")\");\n}\n\nconst campos = { value: d.value, time: new Date(d.ts) };\nif (d.sensor === \"temperatura\" && d.value > UMBRAL) campos.alerta = 1;\n\nreturn [{\n    measurement: \"lecturas\",\n    payload: [campos, { device_id: d.device_id, sensor: d.sensor }]\n}, null, null];\n",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "p5influxout0001",
+                "p5debuglect001"
+            ],
+            [
+                "p5influxout0001",
+                "p5debugest0001"
+            ],
+            [
+                "p5influxout0001",
+                "p5debugdesc001"
+            ]
+        ],
+        "outputLabels": [
+            "lecturas",
+            "estado",
+            "descartados"
+        ]
+    },
+    {
+        "id": "p5influxout0001",
+        "type": "influxdb out",
+        "z": "p5tab0000000001",
+        "influxdb": "p5influxcfg0001",
+        "name": "Bucket iot",
+        "measurement": "",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "${INFLUXDB_ORG}",
+        "bucket": "${INFLUXDB_BUCKET}",
+        "x": 590,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "p5debuglect001",
+        "type": "debug",
+        "z": "p5tab0000000001",
+        "name": "lecturas",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload[0].value",
+        "statusType": "msg",
+        "x": 580,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "p5debugest0001",
+        "type": "debug",
+        "z": "p5tab0000000001",
+        "name": "estado",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload[0].online",
+        "statusType": "msg",
+        "x": 570,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "p5debugdesc001",
+        "type": "debug",
+        "z": "p5tab0000000001",
+        "name": "descartados",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload[0].motivo",
+        "statusType": "msg",
+        "x": 570,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "p5catch0000001",
+        "type": "catch",
+        "z": "p5tab0000000001",
+        "name": "Errores",
+        "scope": null,
+        "uncaught": false,
+        "x": 110,
+        "y": 260,
+        "wires": [
+            [
+                "p5debugerr0001"
+            ]
+        ]
+    },
+    {
+        "id": "p5debugerr0001",
+        "type": "debug",
+        "z": "p5tab0000000001",
+        "name": "errores",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 300,
+        "y": 260,
+        "wires": []
+    }
+]
