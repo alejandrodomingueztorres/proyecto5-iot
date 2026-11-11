@@ -1,0 +1,27 @@
+[19:35:27] Escalado: 10 simuladores extra, 5 min. Resultados en /home/azureuser/escalado-resultados/20261111-1935-N10
+[19:35:27] VM: 2 vCPU, 3906 MiB RAM
+[19:35:27] Construyendo la imagen del simulador desde device/...
+[19:35:29] Creando el usuario MQTT temporal 'escalado'...
+[19:35:32] Lanzando 10 simuladores...
+[19:35:53] Simuladores conectados: 10 de 10
+[19:35:53] Midiendo durante 300 s (desde 2026-11-11T19:35:53Z)...
+
+=== Consumo (docker stats, promedio y máximo por contenedor) ===
+contenedor              CPU prom%   CPU max% Mem prom MiB  Mem max MiB
+backend-grafana-1             0.1        0.1          241          241
+backend-influxdb-1            0.4        0.8          240          242
+backend-mosquitto-1           0.1        0.3            9            9
+backend-nodered-1             0.4        0.7          141          142
+simuladores (total)           0.3        0.5          129          130
+
+=== Mensajes en la ventana de 300 s ===
+Simuladores: esperados 1200 · llegaron al broker 1200 · guardados en InfluxDB 1200
+Pérdida en el broker: 0.0 %
+Pérdida hasta InfluxDB: 0.0 %
+dev01/dev02: llegaron al broker 0 · guardados en InfluxDB 0
+(Con 2 dispositivos reales se esperan 240 si los dos estaban publicando.)
+Nota: ±1 mensaje por dispositivo y sensor por el borde de la ventana.
+[19:41:07] Listo. Archivos: /home/azureuser/escalado-resultados/20261111-1935-N10/{resumen.txt,docker-stats.csv,mensajes.txt}
+[19:41:07] Limpiando...
+[19:41:24] Puntos sim* borrados de InfluxDB (usa --conservar-datos para dejarlos).
+[19:41:24] Usuario 'escalado' borrado, acl.conf restaurado, simuladores eliminados.
