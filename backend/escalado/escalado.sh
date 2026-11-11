@@ -82,7 +82,7 @@ contar_influx() {  # $1 = regex de device_id, $2 = inicio, $3 = fin (RFC3339)
 from(bucket: \"$INFLUXDB_BUCKET\")
   |> range(start: $2, stop: $3)
   |> filter(fn: (r) => r._measurement == \"lecturas\" and r._field == \"value\" and r.device_id =~ /$1/)
-  |> group() |> count()" 2>/dev/null | awk -F, '$0 ~ /^,_result/ {s += $NF} END {print s + 0}'
+  |> group() |> count()" 2>/dev/null | awk -F, '$3 ~ /^[0-9]+$/ {s += $NF} END {print s + 0}'
 }
 
 log "Escalado: $N simuladores extra, $MIN min. Resultados en $OUT"
