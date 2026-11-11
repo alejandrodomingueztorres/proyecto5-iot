@@ -117,7 +117,9 @@ if [ "$N" -gt 0 ]; then
 fi
 
 # Ventana de medición
-T0=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+T0S=$(date -u +%s); T0=$(date -u -d "@$T0S" +%Y-%m-%dT%H:%M:%SZ)
+# InfluxDB se cuenta en [T0, T0 + DUR): la misma duracion que escucha el contador del broker.
+T1=$(date -u -d "@$((T0S + DUR))" +%Y-%m-%dT%H:%M:%SZ)
 log "Midiendo durante $DUR s (desde $T0)..."
 docker run --rm --name escalado-contador --network "$RED" -v "$CERTS:/certs:ro" $IMG_MQTT mosquitto_sub -h mosquitto -p 8883 \
   --cafile /certs/ca.crt -u "$MQTT_NODERED_USER" -P "$MQTT_NODERED_PASSWORD" -t 'iot/+/+' -v -W "$DUR" \
@@ -131,7 +133,6 @@ while [ "$(date +%s)" -lt "$FIN" ]; do
   sleep 15
 done
 wait $SUB || true
-T1=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 sleep 5   # margen para que Node-RED termine de escribir
 
 # Resultados
