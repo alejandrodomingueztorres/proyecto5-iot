@@ -13,10 +13,10 @@
 
 | ID | Prueba | Veredicto | Fecha | Revisado por |
 |---|---|---|---|---|
-| PE.1 | Línea base con 2 dispositivos | ✅ (2 simuladores en lugar de dev01 y dev02) | 2026-11-11 | |
-| PE.2 | 10 simuladores extra | 🟨 (falta la captura del dashboard) | 2026-11-11 | |
-| PE.3 | 50 simuladores extra | 🟨 (falta la captura del dashboard) | 2026-11-11 | |
-| PE.4 | Pérdida de mensajes | ✅ | 2026-11-11 | |
+| PE.1 | Línea base con 2 dispositivos | ✅ (2 simuladores en lugar de dev01 y dev02) | 2026-11-11 | Alejandro Domínguez Torres |
+| PE.2 | 10 simuladores extra | 🟨 (falta la captura del dashboard) | 2026-11-11 | Alejandro Domínguez Torres |
+| PE.3 | 50 simuladores extra | 🟨 (falta la captura del dashboard) | 2026-11-11 | Alejandro Domínguez Torres |
+| PE.4 | Pérdida de mensajes | ✅ | 2026-11-11 | Alejandro Domínguez Torres |
 
 Leyenda: ⬜ Pendiente · ✅ Pasa · ❌ Falla · 🟨 Parcial
 
@@ -57,6 +57,9 @@ tiempo de respuesta de Grafana (`/api/health`), InfluxDB (`/health`) y Node-RED 
 
 Archivos completos en [mediciones/](mediciones/): `escalado-N{2,10,50}-2026-11-11-resumen.txt`,
 `-docker-stats.csv` y `-latencia.txt`.
+
+
+**Revisado por:** Alejandro Domínguez Torres, 2026-11-12. Nota de revisión: los escenarios son 2, 10 y 50 simuladores en total (no 2 reales + N), porque dev01 y dev02 estaban apagados, y la carga se generó en la misma VM; ambas cosas están explicadas arriba y no cambian la conclusión.
 
 ## PE.1
 
