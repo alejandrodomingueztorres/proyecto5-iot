@@ -87,4 +87,4 @@
 | Fecha | Cambio | Motivo | Aprobado por |
 |---|---|---|---|
 | 2026-10-31 | Versión inicial, tomada del plan de trabajo | Arranque del proyecto | Equipo de trabajo |
-| 2026-11-11 | Se agrega la variable opcional `TEMP_FORZADA` (sección 7). No cambia topics, payload ni rangos | Probar alertas (R5.6, R5.7, R5.8) con un dispositivo real, ya que el simulador normal nunca supera los 30 °C | **Pendiente del acuerdo del grupo.** El código lo aprobó Alejandro Domínguez en el PR #6 |
+| 2026-11-11 | Se agrega la variable opcional `TEMP_FORZADA` (sección 7). No cambia topics, payload ni rangos | Probar alertas (R5.6, R5.7, R5.8) con un dispositivo real, ya que el simulador normal nunca supera los 30 °C | Equipo de trabajo (acuerdo en el grupo, 2026-11-12)
