@@ -66,7 +66,7 @@ limpiar() {
   # El repo es de azureuser: git como root se niega a operar sobre él.
   if [ -n "${SUDO_USER:-}" ]; then sudo -u "$SUDO_USER" git checkout -q -- "$ACL"
   else git -c safe.directory='*' checkout -q -- "$ACL"; fi
-  $DC kill -s SIGHUP mosquitto >/dev/null 2>&1
+  $DC exec -T mosquitto kill -HUP 1 </dev/null >/dev/null 2>&1
   if [ "$N" -gt 0 ] && [ "$CONSERVAR" = no ] && [ -n "${T0:-}" ]; then
     for id in $(ids); do
       $DC exec -T influxdb influx delete --org "$INFLUXDB_ORG" --bucket "$INFLUXDB_BUCKET" \
@@ -101,7 +101,7 @@ if [ "$N" -gt 0 ]; then
     -b /mosquitto/config/passwd escalado "$CLAVE" 2>&1 | grep -v "^Warning" || true
   chown 1883:1883 mosquitto/config/passwd; chmod 600 mosquitto/config/passwd
   printf '\nuser escalado\ntopic write iot/#\n' >> "$ACL"
-  $DC kill -s SIGHUP mosquitto >/dev/null 2>&1
+  $DC exec -T mosquitto kill -HUP 1 </dev/null >/dev/null 2>&1
   sleep 2
 
   log "Lanzando $N simuladores..."
