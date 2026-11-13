@@ -33,7 +33,7 @@ Las pruebas de cada uno están en [docs/requerimientos.md](docs/requerimientos.m
 | R5.5 | Dashboard en Grafana | Tiempo real; 5+ paneles con datos reales | Rol 4 | 🟨 | [Ver](docs/evidencias/R5.5.md) |
 | R5.6 | Alertas por umbral | Recibida en menos de 30 s; demostrada en vivo | Rol 4 · Rol 3 | 🟨 | [Ver](docs/evidencias/R5.6.md) |
 | R5.7 | Detección de dispositivo offline | Alerta tras 5 min sin datos; recuperación detectada | Rol 4 · Rol 1 | 🟨 | [Ver](docs/evidencias/R5.7.md) |
-| R5.8 | Incorporación de un tercer dispositivo | Integrado en menos de 30 min con la guía; visible en el dashboard | Rol 5 · Rol 1 | ⬜ | [Ver](docs/evidencias/R5.8.md) |
+| R5.8 | Incorporación de un tercer dispositivo | Integrado en menos de 30 min con la guía; visible en el dashboard | Rol 5 · Rol 1 | 🟨 | [Ver](docs/evidencias/R5.8.md) |
 | — | Escalado (objetivo del proyecto) | Consumo con 10 y 50 dispositivos medido | Rol 5 · Rol 2 | 🟨 | [Ver](docs/evidencias/escalado.md) |
 
 **Leyenda:** ⬜ Pendiente · 🟨 En progreso · ✅ Cumplido · ❌ Falla
@@ -78,7 +78,20 @@ Sin los certificados y los usuarios, Mosquitto no arranca. La VM del proyecto ya
 desplegada en `68.211.147.97` y se deja apagada cuando no se usa.
 
 ### 2. Dispositivos
-_Pendiente (Rol 1)._
+Cada dispositivo es un contenedor con el simulador de [`device/`](device/). Hay dos formas de crear uno, las dos descritas paso a paso en la **[guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md)**:
+
+- **Docker (recomendada):** necesita Docker, este repositorio y la clave MQTT del dispositivo (la entrega el Rol 2 por el chat privado del grupo).
+- **BalenaCloud + VirtualBox:** la usada para `dev01` y `dev02`; necesita acceso a la flota de Balena.
+
+Con Docker, resumido (los detalles y la forma segura de cargar la clave están en la guía):
+
+```bash
+docker build -t p5-simulador device/
+docker run -d --name dev03 -e DEVICE_ID=dev03 -e MQTT_USER=dev03 -e MQTT_PASSWORD \
+  -e BROKER_HOST=<IP_DE_LA_VM_AZURE> -e BROKER_PORT=8883 -e CA_CERT_PATH=/app/ca.crt p5-simulador
+```
+
+`MQTT_PASSWORD` va sin valor: Docker lo toma de tu terminal, para que la clave no quede escrita en el comando.
 
 ### 3. Comprobar que todo funciona
 _Pendiente._

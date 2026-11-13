@@ -80,9 +80,11 @@
 | `BROKER_PORT` | `8883` | Variable de la flota |
 | `CA_CERT_PATH` | `/app/ca.crt` | Variable de la flota |
 | `PUBLISH_INTERVAL` | `5` | Variable de la flota |
+| `TEMP_FORZADA` | Opcional. Número en °C (por ejemplo `32`). Solo para demos y pruebas de alertas: el dispositivo publica esa temperatura ±0.5, limitada a −20…80 °C. Sin definir, el rango normal es 20–29 °C | Variable de cada dispositivo en Balena (o `-e` en Docker) |
 
 ## 8. Historial de cambios
 
 | Fecha | Cambio | Motivo | Aprobado por |
 |---|---|---|---|
 | 2026-10-31 | Versión inicial, tomada del plan de trabajo | Arranque del proyecto | Equipo de trabajo |
+| 2026-11-11 | Se agrega la variable opcional `TEMP_FORZADA` (sección 7). No cambia topics, payload ni rangos | Probar alertas (R5.6, R5.7, R5.8) con un dispositivo real, ya que el simulador normal nunca supera los 30 °C | Equipo de trabajo (acuerdo en el grupo, 2026-11-12)
