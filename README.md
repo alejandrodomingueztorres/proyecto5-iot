@@ -27,14 +27,14 @@ Las pruebas de cada uno están en [docs/requerimientos.md](docs/requerimientos.m
 | ID | Requerimiento | Criterio de aceptación | Responsable | Estado | Evidencia |
 |---|---|---|---|---|---|
 | R5.1 | 2+ dispositivos en BalenaCloud con OTA | OTA sin intervención manual; dispositivos visibles en Balena | Rol 1 | ✅ | [Ver](docs/evidencias/R5.1.md) |
-| R5.2 | Publicación MQTT con TLS y autenticación | Mensajes publicados; cifrado verificado con Wireshark o logs | Rol 2 | ⬜ | [Ver](docs/evidencias/R5.2.md) |
-| R5.3 | Esquema de topics documentado | Nuevos dispositivos adoptados sin modificar el consumidor | Rol 2 · Rol 5 | ⬜ | [Ver](docs/evidencias/R5.3.md) |
+| R5.2 | Publicación MQTT con TLS y autenticación | Mensajes publicados; cifrado verificado con Wireshark o logs | Rol 2 | 🟨 | [Ver](docs/evidencias/R5.2.md) |
+| R5.3 | Esquema de topics documentado | Nuevos dispositivos adoptados sin modificar el consumidor | Rol 2 · Rol 5 | 🟨 | [Ver](docs/evidencias/R5.3.md) |
 | R5.4 | Procesamiento Node-RED → InfluxDB | Datos almacenados; reglas verificadas con datos de prueba | Rol 3 | ✅ | [Ver](docs/evidencias/R5.4.md) |
 | R5.5 | Dashboard en Grafana | Tiempo real; 5+ paneles con datos reales | Rol 4 | 🟨 | [Ver](docs/evidencias/R5.5.md) |
 | R5.6 | Alertas por umbral | Recibida en menos de 30 s; demostrada en vivo | Rol 4 · Rol 3 | 🟨 | [Ver](docs/evidencias/R5.6.md) |
 | R5.7 | Detección de dispositivo offline | Alerta tras 5 min sin datos; recuperación detectada | Rol 4 · Rol 1 | 🟨 | [Ver](docs/evidencias/R5.7.md) |
 | R5.8 | Incorporación de un tercer dispositivo | Integrado en menos de 30 min con la guía; visible en el dashboard | Rol 5 · Rol 1 | ⬜ | [Ver](docs/evidencias/R5.8.md) |
-| — | Escalado (objetivo del proyecto) | Consumo con 10 y 50 dispositivos medido | Rol 5 · Rol 2 | ⬜ | [Ver](docs/evidencias/escalado.md) |
+| — | Escalado (objetivo del proyecto) | Consumo con 10 y 50 dispositivos medido | Rol 5 · Rol 2 | 🟨 | [Ver](docs/evidencias/escalado.md) |
 
 **Leyenda:** ⬜ Pendiente · 🟨 En progreso · ✅ Cumplido · ❌ Falla
 
@@ -60,12 +60,22 @@ Las pruebas de cada uno están en [docs/requerimientos.md](docs/requerimientos.m
 > 🚧 **En construcción.** Los Roles 1 y 2 completan esta sección cuando el sistema esté estable, y el Rol 5 la valida siguiéndola desde cero.
 
 ### 1. Backend en Azure
+
+Guía completa (VM, firewall, pruebas): [docs/rol2-infraestructura.md](docs/rol2-infraestructura.md).
+Resumen, en la VM Ubuntu con Docker instalado:
+
 ```bash
 git clone https://github.com/alejandrodomingueztorres/proyecto5-iot.git
 cd proyecto5-iot/backend
-cp .env.example .env      # completar con los valores reales 
-docker compose up -d
+cp .env.example .env      # completar BROKER_HOST y las claves (por el chat privado, nunca al repo)
+sudo bash mosquitto/generar-certificados.sh                 # CA propia y certificado del broker
+sudo bash mosquitto/crear-usuario.sh dev01                  # repetir con dev02 y dev03
+sudo bash mosquitto/crear-usuario.sh nodered "$(grep '^MQTT_NODERED_PASSWORD=' .env | cut -d= -f2-)"
+docker compose up -d      # Mosquitto (8883 TLS), Node-RED, InfluxDB y Grafana
 ```
+
+Sin los certificados y los usuarios, Mosquitto no arranca. La VM del proyecto ya está
+desplegada en `68.211.147.97` y se deja apagada cuando no se usa.
 
 ### 2. Dispositivos
 Cada dispositivo es un contenedor con el simulador de [`device/`](device/). Hay dos formas de crear uno, las dos descritas paso a paso en la **[guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md)**:
@@ -108,6 +118,8 @@ proyecto5-iot/
 | [Contrato compartido](docs/contrato.md) | Topics, formato del mensaje, puertos, base de datos y umbrales |
 | [Requerimientos y pruebas](docs/requerimientos.md) | Qué se prueba, cómo y qué resultado se espera |
 | [Plantilla de evidencias](docs/evidencias/PLANTILLA.md) | Formato para registrar cada prueba |
+| [Protocolo MQTT](docs/protocolo-mqtt.md) | Conexión, topics, JSON, QoS, permisos, ejemplos y alta de dispositivos |
+| [Backend en Azure (Rol 2)](docs/rol2-infraestructura.md) | VM, firewall, TLS, usuarios, pruebas de R5.2 y escalado |
 
 ---
 

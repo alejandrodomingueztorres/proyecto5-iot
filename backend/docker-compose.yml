@@ -1,0 +1,95 @@
+# Backend del Proyecto 5 IoT (Rol 2). Corre en la VM Ubuntu de Azure.
+#
+# Las claves salen de backend/.env (copia de .env.example con valores reales).
+# El .env NUNCA se sube al repo: se pasa por el chat privado del grupo.
+#
+# Puertos (ver docs/contrato.md):
+#   8883  MQTT con TLS  -> abierto a internet en el NSG de Azure
+#   1880  Node-RED      -> el NSG solo lo abre a las IP del equipo
+#   8086  InfluxDB      -> el NSG solo lo abre a las IP del equipo
+#   3000  Grafana       -> el NSG solo lo abre a las IP del equipo
+#   1883  no se publica: no hay MQTT sin TLS.
+#
+# Antes del primer `docker compose up -d` hay que generar los certificados y los
+# usuarios MQTT (pasos en docs/rol2-infraestructura.md).
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.20
+    restart: unless-stopped
+    ports:
+      - "8883:8883"
+    volumes:
+      # Solo lectura: así el contenedor no cambia el dueño de los archivos del repo.
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+
+  influxdb:
+    image: influxdb:2.7
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      # El setup inicial solo se ejecuta la primera vez (con el volumen vacío).
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUXDB_ADMIN_USER:?falta INFLUXDB_ADMIN_USER en .env}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUXDB_ADMIN_PASSWORD:?falta INFLUXDB_ADMIN_PASSWORD en .env}
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUXDB_ORG:?falta INFLUXDB_ORG en .env}
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUXDB_BUCKET:?falta INFLUXDB_BUCKET en .env}
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUXDB_ADMIN_TOKEN:?falta INFLUXDB_ADMIN_TOKEN en .env}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+
+  nodered:
+    image: nodered/node-red:4.0
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      # Disponibles en los flujos como ${MQTT_NODERED_USER}, etc. (Rol 3).
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "8883"
+      MQTT_CA_CERT_PATH: /certs/ca.crt
+      MQTT_NODERED_USER: ${MQTT_NODERED_USER:?falta MQTT_NODERED_USER en .env}
+      MQTT_NODERED_PASSWORD: ${MQTT_NODERED_PASSWORD:?falta MQTT_NODERED_PASSWORD en .env}
+      INFLUXDB_URL: http://influxdb:8086
+      INFLUXDB_ORG: ${INFLUXDB_ORG}
+      INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
+      # Token solo de escritura sobre el bucket iot (contrato, sección 4).
+      INFLUXDB_TOKEN: ${INFLUXDB_NODERED_TOKEN:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - nodered_data:/data
+      # ca.crt para conectarse al broker con TLS. server.key también queda en
+      # esa carpeta, pero solo la puede leer el usuario de Mosquitto.
+      - ./mosquitto/config/certs:/certs:ro
+    depends_on:
+      - mosquitto
+      - influxdb
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:?falta GF_SECURITY_ADMIN_USER en .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?falta GF_SECURITY_ADMIN_PASSWORD en .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Token solo de lectura sobre el bucket iot, para el data source de InfluxDB.
+      INFLUXDB_TOKEN: ${INFLUXDB_GRAFANA_TOKEN:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - influxdb
+
+volumes:
+  mosquitto_data:
+  influxdb_data:
+  influxdb_config:
+  nodered_data:
+  grafana_data:
