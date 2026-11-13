@@ -315,9 +315,15 @@ dashboard abierto para la captura. Para probar el script sin ocupar 5 minutos:
 - **Timeout desde afuera.** Falta la regla del 8883 en el NSG.
 - **Cambié `acl.conf` o un usuario y no toma efecto.** `crear-usuario.sh`
   recarga Mosquitto solo; tras editar `acl.conf`, ejecutar
-  `docker compose kill -s SIGHUP mosquitto`. Recarga sin desconectar a nadie;
+  `docker compose exec mosquitto kill -HUP 1`. Recarga sin desconectar a nadie;
   `docker compose restart mosquitto` también sirve, pero corta a todos los
-  dispositivos unos segundos.
+  dispositivos unos segundos. **No usar** `docker compose kill -s SIGHUP mosquitto`:
+  recarga igual, pero Docker marca el contenedor como detenido a mano y al prender
+  la VM no lo vuelve a levantar.
+- **Al prender la VM, Mosquitto no está (`docker compose ps` lo muestra `Exited`)
+  y los demás sí.** Es lo de la viñeta anterior: alguien recargó con
+  `docker compose kill`. Arreglo: `docker compose up -d mosquitto`; desde ahí
+  vuelve a arrancar solo.
 - **`git pull` en la VM falla con `Permission denied` en `certs/`.** La carpeta
   la creó el script de certificados como root. Arreglo:
   `sudo chown azureuser:azureuser mosquitto/config/certs` (la `server.key` sigue

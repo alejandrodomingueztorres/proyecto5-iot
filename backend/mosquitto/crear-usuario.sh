@@ -55,8 +55,10 @@ fi
 chown "$MOSQUITTO_UID:$MOSQUITTO_UID" "$PASSWD"
 chmod 600 "$PASSWD"
 
-# SIGHUP: Mosquitto recarga passwd y acl.conf sin desconectar a nadie.
+# SIGHUP: Mosquitto recarga passwd y acl.conf sin desconectar a nadie. La señal se
+# manda desde dentro del contenedor: con "docker compose kill -s SIGHUP", Docker marca el
+# contenedor como detenido a mano y no lo vuelve a levantar al prender la VM.
 if docker compose -f ../docker-compose.yml ps --status running --services 2>/dev/null | grep -qx mosquitto; then
-  docker compose -f ../docker-compose.yml kill -s SIGHUP mosquitto >/dev/null 2>&1
+  docker compose -f ../docker-compose.yml exec -T mosquitto kill -HUP 1 </dev/null >/dev/null 2>&1
   echo "Mosquitto recargó usuarios y permisos."
 fi
