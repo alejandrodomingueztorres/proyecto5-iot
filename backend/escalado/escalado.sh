@@ -82,7 +82,7 @@ contar_influx() {  # $1 = regex de device_id, $2 = inicio, $3 = fin (RFC3339)
 from(bucket: \"$INFLUXDB_BUCKET\")
   |> range(start: $2, stop: $3)
   |> filter(fn: (r) => r._measurement == \"lecturas\" and r._field == \"value\" and r.device_id =~ /$1/)
-  |> group() |> count()" 2>/dev/null | awk -F, '$0 ~ /^,_result/ {s += $NF} END {print s + 0}'
+  |> group() |> count()" 2>/dev/null | awk -F, '$3 ~ /^[0-9]+$/ {s += $NF} END {print s + 0}'
 }
 
 log "Escalado: $N simuladores extra, $MIN min. Resultados en $OUT"
@@ -117,7 +117,9 @@ if [ "$N" -gt 0 ]; then
 fi
 
 # Ventana de medición
-T0=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+T0S=$(date -u +%s); T0=$(date -u -d "@$T0S" +%Y-%m-%dT%H:%M:%SZ)
+# InfluxDB se cuenta en [T0, T0 + DUR): la misma duracion que escucha el contador del broker.
+T1=$(date -u -d "@$((T0S + DUR))" +%Y-%m-%dT%H:%M:%SZ)
 log "Midiendo durante $DUR s (desde $T0)..."
 docker run --rm --name escalado-contador --network "$RED" -v "$CERTS:/certs:ro" $IMG_MQTT mosquitto_sub -h mosquitto -p 8883 \
   --cafile /certs/ca.crt -u "$MQTT_NODERED_USER" -P "$MQTT_NODERED_PASSWORD" -t 'iot/+/+' -v -W "$DUR" \
@@ -131,7 +133,6 @@ while [ "$(date +%s)" -lt "$FIN" ]; do
   sleep 15
 done
 wait $SUB || true
-T1=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 sleep 5   # margen para que Node-RED termine de escribir
 
 # Resultados
