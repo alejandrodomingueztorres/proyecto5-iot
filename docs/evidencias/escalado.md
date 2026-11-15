@@ -4,7 +4,7 @@
 |---|---|
 | Objetivo del enunciado | Escalar el sistema agregando dispositivos y medir el impacto en la infraestructura. |
 | Responsable | Rol 5 · Rol 2 |
-| Estado | ✅ Cumplido (consumo, pérdida y dashboard medidos con 2, 10 y 50 simuladores; falta la firma de los Intentos 2) |
+| Estado | ✅ Cumplido |
 | Pruebas definidas en | [requerimientos.md](../requerimientos.md) |
 | Plantilla | [PLANTILLA.md](PLANTILLA.md) |
 | Capturas | `docs/evidencias/img/escalado/` |
@@ -14,8 +14,8 @@
 | ID | Prueba | Veredicto | Fecha | Revisado por |
 |---|---|---|---|---|
 | PE.1 | Línea base con 2 dispositivos | ✅ (2 simuladores en lugar de dev01 y dev02) | 2026-11-11 | Alejandro Domínguez Torres |
-| PE.2 | 10 simuladores extra | ✅ (captura del dashboard en el Intento 2) | 2026-11-15 | Alejandro Domínguez Torres (Intento 1) |
-| PE.3 | 50 simuladores extra | ✅ (captura del dashboard en el Intento 2) | 2026-11-15 | Alejandro Domínguez Torres (Intento 1) |
+| PE.2 | 10 simuladores extra | ✅ (Intento 1: consumo · Intento 2: dashboard) | 2026-11-11 y 2026-11-15 | Alejandro Domínguez Torres |
+| PE.3 | 50 simuladores extra | ✅ (Intento 1: consumo · Intento 2: dashboard) | 2026-11-11 y 2026-11-15 | Alejandro Domínguez Torres |
 | PE.4 | Pérdida de mensajes | ✅ | 2026-11-11 | Alejandro Domínguez Torres |
 
 Leyenda: ⬜ Pendiente · ✅ Pasa · ❌ Falla · 🟨 Parcial
@@ -133,6 +133,9 @@ Dashboard: página cargada en 0,60 s · 10 consultas, 0,17 s de promedio y 0,19 
 **Observaciones:** El dashboard muestra los 10 simuladores (`sim001`–`sim010`) en todos los paneles
 y responde sin demora.
 
+
+**Revisado por:** Alejandro Domínguez Torres, 2026-11-15
+
 ## PE.3
 
 ### PE.3 — 50 simuladores · Intento 1
@@ -194,6 +197,9 @@ Dashboard: página cargada en 0,48 s · consultas de 0,35 s de promedio y 0,47 s
   dashboard.
 - InfluxDB guardó 5 998 de 6 000: los 2 que faltan caen en el borde de la ventana de medición
   (±1 por serie), no son pérdida. El broker recibió los 6 000.
+
+
+**Revisado por:** Alejandro Domínguez Torres, 2026-11-15
 
 ## PE.4
 
