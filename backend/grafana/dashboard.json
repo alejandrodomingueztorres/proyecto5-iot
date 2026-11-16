@@ -158,7 +158,7 @@
             "uid": "bg48zbqjfcbggb"
           },
           "hide": false,
-          "query": "from(bucket: \"iot\")\n  |> range(start: v.timeRangeStart)\n  |> filter(fn: (r) => r._measurement == \"estado\" and r._field == \"online\" and r.device_id =~ /^${device_id:regex}$/)\n  |> last()",
+          "query": "from(bucket: \"iot\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"estado\" and r._field == \"online\" and r.device_id =~ /^dev0[0-9]$/ and r.device_id =~ /^${device_id:regex}$/)\n  |> last()",
           "refId": "A"
         }
       ],
