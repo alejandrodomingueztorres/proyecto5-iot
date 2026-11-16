@@ -63,7 +63,7 @@
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
-            "allValues"
+            "mean"
           ],
           "fields": "",
           "values": false
@@ -100,6 +100,11 @@
                   "color": "dark-red",
                   "index": 0,
                   "text": "OFFLINE"
+                },
+                "1": {
+                  "color": "dark-green",
+                  "index": 1,
+                  "text": "ONLINE"
                 }
               },
               "type": "value"
@@ -547,6 +552,6 @@
   "timezone": "browser",
   "title": "Dashboard Oficial (Grafana 11)",
   "uid": "p5-dashboard-g11",
-  "version": 9,
+  "version": 11,
   "weekStart": ""
 }
