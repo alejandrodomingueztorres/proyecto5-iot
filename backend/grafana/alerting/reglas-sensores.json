@@ -1,0 +1,265 @@
+{
+  "title": "Sensores",
+  "folderUid": "fg490jd7cv4e8b",
+  "interval": 10,
+  "rules": [
+    {
+      "uid": "cg490oga3ycqob",
+      "orgID": 1,
+      "folderUID": "fg490jd7cv4e8b",
+      "ruleGroup": "Sensores",
+      "title": "Temperatura Alta",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "datasourceUid": "bg48zbqjfcbggb",
+          "model": {
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "query": "from(bucket: \"iot\")\r\n  |> range(start: -5m)\r\n  |> filter(fn: (r) => r._measurement == \"lecturas\" and r.sensor == \"temperatura\" and r._field == \"value\")\r\n  |> last()",
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": [
+                    "B"
+                  ]
+                },
+                "reducer": {
+                  "params": [],
+                  "type": "last"
+                },
+                "type": "query"
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "A",
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "reducer": "last",
+            "refId": "B",
+            "type": "reduce"
+          }
+        },
+        {
+          "refId": "C",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    30
+                  ],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": [
+                    "C"
+                  ]
+                },
+                "reducer": {
+                  "params": [],
+                  "type": "last"
+                },
+                "type": "query"
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "B",
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "C",
+            "type": "threshold"
+          }
+        }
+      ],
+      "noDataState": "NoData",
+      "execErrState": "Error",
+      "for": "0s",
+      "annotations": {
+        "summary": "Temperatura de {{ $labels.device_id }} por encima de 30 C"
+      },
+      "isPaused": false,
+      "notification_settings": {
+        "receiver": "Telegram",
+        "group_by": [
+          "grafana_folder",
+          "alertname",
+          "device_id"
+        ],
+        "group_wait": "0s",
+        "group_interval": "10s",
+        "repeat_interval": "4h"
+      },
+      "record": null
+    },
+    {
+      "uid": "dg491a0u424n4a",
+      "orgID": 1,
+      "folderUID": "fg490jd7cv4e8b",
+      "ruleGroup": "Sensores",
+      "title": "Alerta Dispositivo Offline",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 3600,
+            "to": 0
+          },
+          "datasourceUid": "bg48zbqjfcbggb",
+          "model": {
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "query": "from(bucket: \"iot\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"lecturas\" and r.sensor == \"temperatura\" and r._field == \"value\")\n  |> last()\n  |> map(fn: (r) => ({r with _value: float(v: int(v: now()) - int(v: r._time)) / 1000000000.0}))",
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": [
+                    "B"
+                  ]
+                },
+                "reducer": {
+                  "params": [],
+                  "type": "last"
+                },
+                "type": "query"
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "A",
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "reducer": "last",
+            "refId": "B",
+            "type": "reduce"
+          }
+        },
+        {
+          "refId": "C",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "datasourceUid": "__expr__",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    300
+                  ],
+                  "type": "gt"
+                },
+                "operator": {
+                  "type": "and"
+                },
+                "query": {
+                  "params": [
+                    "C"
+                  ]
+                },
+                "reducer": {
+                  "params": [],
+                  "type": "last"
+                },
+                "type": "query"
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "__expr__"
+            },
+            "expression": "B",
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "C",
+            "type": "threshold"
+          }
+        }
+      ],
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "for": "0s",
+      "annotations": {
+        "summary": "Dispositivo {{ $labels.device_id }} sin datos hace mas de 5 minutos (offline)"
+      },
+      "isPaused": false,
+      "notification_settings": {
+        "receiver": "Telegram",
+        "group_by": [
+          "grafana_folder",
+          "alertname",
+          "device_id"
+        ],
+        "group_wait": "0s",
+        "group_interval": "10s",
+        "repeat_interval": "4h"
+      },
+      "record": null
+    }
+  ]
+}
