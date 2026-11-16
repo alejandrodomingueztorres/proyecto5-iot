@@ -80,15 +80,15 @@ desplegada en `68.211.147.97` y se deja apagada cuando no se usa.
 ### 2. Dispositivos
 Cada dispositivo es un contenedor con el simulador de [`device/`](device/). Hay dos formas de crear uno, las dos descritas paso a paso en la **[guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md)**:
 
-- **Docker (recomendada):** necesita Docker, este repositorio y la clave MQTT del dispositivo (la entrega el Rol 2 por el chat privado del grupo).
-- **BalenaCloud + VirtualBox:** la usada para `dev01` y `dev02`; necesita acceso a la flota de Balena.
+- **BalenaCloud + VirtualBox (principal):** la usada para `dev01` y `dev02`; es la tecnología que pide el proyecto para gestionar dispositivos. Necesita acceso a la flota de Balena.
+- **Docker (alternativa rápida, plan B):** necesita Docker, este repositorio y la clave MQTT del dispositivo (la entrega el Rol 2 por el chat privado del grupo).
 
 Con Docker, resumido (los detalles y la forma segura de cargar la clave están en la guía):
 
 ```bash
 docker build -t p5-simulador device/
 docker run -d --name dev03 -e DEVICE_ID=dev03 -e MQTT_USER=dev03 -e MQTT_PASSWORD \
-  -e BROKER_HOST=<IP_DE_LA_VM_AZURE> -e BROKER_PORT=8883 -e CA_CERT_PATH=/app/ca.crt p5-simulador
+  -e BROKER_HOST=<IP_DE_LA_VM_AZURE> -e BROKER_PORT=8883 p5-simulador
 ```
 
 `MQTT_PASSWORD` va sin valor: Docker lo toma de tu terminal, para que la clave no quede escrita en el comando.

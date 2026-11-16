@@ -2,7 +2,9 @@
 
 Cómo sumar un dispositivo (por ejemplo `dev03`) al sistema **sin modificar la infraestructura**: ni `backend/`, ni Node-RED, ni Grafana. El objetivo del curso es hacerlo en **menos de 30 minutos** siguiendo solo esta guía.
 
-> **Estado de esta guía: borrador.** La redactó Rol 1 y todavía **no** la ha seguido una persona que no la escribió (prueba P8.1 de [R5.8](evidencias/R5.8.md)). Los comandos de la Ruta B no se ejecutaron en el PC del autor (no tiene Docker) y la Ruta A se escribió a partir de lo que ya funcionó para `dev01` y `dev02`. Quien la pruebe debe anotar dónde se traba.
+> **Estado de esta guía.** La redactó Rol 1.
+> - **Ruta B (Docker):** la siguió Alejandro Domínguez (Rol 5, que no la escribió) el 2026-11-16. Se corrigió el problema que encontró (Git Bash convertía la ruta del certificado). Detalle en [R5.8](evidencias/R5.8.md).
+> - **Ruta A (Balena + VirtualBox):** se escribió a partir de lo que funcionó para `dev01` y `dev02`, pero **todavía no la ha seguido una persona que no la escribió** (prueba P8.1, intento 2). Quien la pruebe debe anotar dónde se traba.
 
 ## Qué hace falta saber antes
 
@@ -10,15 +12,15 @@ Cada dispositivo es un contenedor con el simulador de `device/`. Lee su configur
 
 Hay dos rutas. Las dos usan **la misma imagen** y el mismo simulador:
 
-| | **Ruta B: Docker** (recomendada) | **Ruta A: BalenaCloud + VirtualBox** |
+| | **Ruta A: BalenaCloud + VirtualBox** (principal) | **Ruta B: Docker** (alternativa rápida) |
 |---|---|---|
-| Qué se crea | Un contenedor Docker en cualquier equipo | Una máquina virtual con balenaOS, gestionada desde Balena |
-| Necesitas | Docker, este repositorio, la clave del dispositivo | VirtualBox, **acceso a la flota de Balena**, la clave del dispositivo |
-| Aparece en Balena y recibe OTA | No | Sí |
-| Cabe en 30 min | Sí | Ajustado (descarga de ~1.4 GB, conversión y arranque de la VM) |
-| Cuándo usarla | Cualquier persona del grupo | Para demostrar la gestión de flota (R5.1) |
+| Qué se crea | Una máquina virtual con balenaOS, gestionada desde Balena | Un contenedor Docker en cualquier equipo |
+| Necesitas | VirtualBox, **acceso a la flota de Balena**, la clave del dispositivo | Docker, este repositorio, la clave del dispositivo |
+| Aparece en Balena y recibe OTA | Sí | No |
+| Cabe en 30 min | Por medir (descarga de ~1.4 GB, conversión y arranque de la VM) | Sí: ≈ 7 min activos medidos el 2026-11-16 |
+| Cuándo usarla | Para demostrar R5.8 con la tecnología que pide el proyecto (Balena) | Plan B, o para probar rápido sin VM |
 
-`dev01` y `dev02` usan la Ruta A. Para sumar `dev03` en la prueba P8.1, usa la Ruta B salvo que el profesor o el grupo pidan expresamente Balena.
+`dev01` y `dev02` usan la Ruta A. El enunciado del proyecto pide BalenaCloud para gestionar los dispositivos, así que **la Ruta A es la que debe usarse para demostrar R5.8**. La Ruta B queda como respaldo.
 
 ## Requisitos comunes (para las dos rutas)
 
@@ -47,9 +49,11 @@ Valores para un dispositivo nuevo (según el [contrato](contrato.md), sección 7
 
 ---
 
-## Ruta B: Docker (recomendada)
+## Ruta B: Docker (alternativa rápida)
 
-Siete pasos. Anota la hora de inicio y fin de cada uno: la tabla de tiempos de [R5.8](evidencias/R5.8.md) usa esta misma numeración.
+Siete pasos. Anota la hora de inicio y fin de cada uno: la tabla de tiempos de [R5.8](evidencias/R5.8.md) usa esta misma numeración. Las capturas se toman con el cronómetro detenido, o se anotan las pausas.
+
+Los comandos están escritos para **Git Bash, Linux o macOS**. Donde cambia la sintaxis en **PowerShell** se indica.
 
 ### Paso 1. Comprobar que el broker responde
 
@@ -101,12 +105,13 @@ docker run -d --name dev03 --restart unless-stopped \
   -e MQTT_PASSWORD \
   -e BROKER_HOST=68.211.147.97 \
   -e BROKER_PORT=8883 \
-  -e CA_CERT_PATH=/app/ca.crt \
   -e PUBLISH_INTERVAL=5 \
   p5-simulador
 ```
 
-En PowerShell, escribe el comando en una sola línea (sin las `\`).
+- **No se pasa `CA_CERT_PATH` a propósito:** el simulador ya usa `/app/ca.crt` por defecto, que es donde la imagen deja el certificado.
+- **Git Bash:** si necesitas pasar una variable con una ruta que empieza por `/` (por ejemplo `-e CA_CERT_PATH=/app/ca.crt`), antepón `MSYS_NO_PATHCONV=1` al comando. Sin eso, Git Bash la convierte en una ruta de Windows (`C:/Program Files/Git/app/ca.crt`), el contenedor no encuentra el certificado y se reinicia con `FileNotFoundError`.
+- **PowerShell:** escribe el comando en una sola línea (sin las `\`).
 
 ### Paso 6. Comprobar en el log del dispositivo
 
@@ -222,7 +227,7 @@ Panel de **Logs** del dispositivo (o `balena device logs <UUID>`): las mismas l�
 
 El simulador normal publica 20–29 °C y nunca supera el umbral de 30 °C. Para disparar la alerta de temperatura con `dev03` define la variable opcional `TEMP_FORZADA`:
 
-- **Ruta B:** agrega `-e TEMP_FORZADA=32` al `docker run` (o recrea el contenedor con ella).
+- **Ruta B:** agrega `-e TEMP_FORZADA=32` al `docker run` (o recrea el contenedor con ella; funcionó el 2026-11-16).
 - **Ruta A:** Balena → `dev03` → *Device Variables* → `TEMP_FORZADA` = `32`.
 
 El dispositivo publica entonces entre 31.5 y 32.5 °C. **Bórrala al terminar** para volver a lo normal. Para la alerta de offline, detén el contenedor o apaga la VM y espera más de 5 minutos.
@@ -233,6 +238,7 @@ El dispositivo publica entonces entre 31.5 y 32.5 °C. **Bórrala al terminar** 
 |---|---|---|
 | `Test-NetConnection` da `False` | La VM de Azure está apagada | Pedir a Rol 2 que la prenda; no es un fallo del dispositivo |
 | El log muestra `KeyError: 'MQTT_PASSWORD'` (o `'DEVICE_ID'`, `'BROKER_HOST'`) y el contenedor se reinicia | Falta una variable obligatoria | Cargar `DEVICE_ID`, `MQTT_PASSWORD` y `BROKER_HOST` |
+| `FileNotFoundError` en `tls_set` y el contenedor se reinicia (Ruta B, Git Bash) | Git Bash convirtió `/app/ca.crt` en una ruta de Windows | No pasar `CA_CERT_PATH` (ya es el valor por defecto) o anteponer `MSYS_NO_PATHCONV=1`. Se comprueba con `docker inspect dev03 --format '{{range .Config.Env}}{{println .}}{{end}}'` |
 | `NO_CERTIFICATE_OR_CRL_FOUND` | La imagen se construyó con un `ca.crt` vacío o ausente | `git pull` y reconstruir la imagen |
 | `conexion rechazada: Not authorized` | Clave equivocada o cruzada con otro dispositivo | Pedir de nuevo la clave y comprobar que corresponde a este `device_id` |
 | `esperando conexion con el broker...` sin fin | Broker apagado o sin salida a internet por el puerto 8883 | Comprobar el Paso 1 y la red |
