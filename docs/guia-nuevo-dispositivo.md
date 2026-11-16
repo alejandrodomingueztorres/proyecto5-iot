@@ -147,29 +147,70 @@ docker rm dev03
 
 ---
 
-## Ruta A: BalenaCloud + VirtualBox
+## Ruta A: BalenaCloud + VirtualBox (principal)
 
-Es la ruta con la que se crearon `dev01` y `dev02`. Aquí **cada dispositivo necesita su propia imagen de Balena**: reutilizar una descarga clona la identidad y el segundo dispositivo no aparece.
+Es la ruta con la que se crearon `dev01` y `dev02`, y la que pide el proyecto para R5.8. Aquí **cada dispositivo necesita su propia imagen** de Balena: reutilizar una descarga clona la identidad y el segundo dispositivo no aparece.
 
-### Requisito adicional: acceso a la flota de Balena
+### Qué debe estar encendido en cada paso
 
-La imagen se descarga de la flota `proyecto5-iot` del Rol 1. Quien siga esta ruta necesita su propia cuenta de Balena (gratuita) y que Rol 1 la agregue a la flota: dashboard → flota → pestaña **Members**, invitando por **correo**. No compartas nunca la contraseña de la cuenta, solo la invitación. *[Verificar: rol que necesita para descargar la imagen y si el plan gratuito lo permite.]*
+| Paso | VM de Azure (broker) | VM `dev01` / `dev02` | Internet |
+|---|---|---|---|
+| Dar y aceptar el acceso a la flota | No | No | Sí |
+| A1 a A5 (descargar, convertir, crear la VM, instalar, cargar variables) | No | No | Sí |
+| A6 (ver el log de `dev03`) | **Sí** (sin broker solo verás `esperando conexion con el broker...`) | No | Sí |
+| Paso 7 (ver `dev03` en Grafana) | **Sí** | No hace falta | Sí |
 
-### A1. Registrar el dispositivo en Balena
+`dev01` y `dev02` **no** hacen falta para incorporar `dev03`. Prende la VM de Azure justo antes de A6 (tarda ≈ 2 min en quedar "En ejecución") y comprueba el puerto con el comando de los requisitos comunes.
 
-Flota → **Add device** → Tipo **Generic x86_64 (GPT)**, balenaOS **9.0.4** (Production), conexión **solo Ethernet**, Secure Boot apagado. Descargar el `.zip` (≈ 1.4 GB) y extraerlo en una **carpeta nueva** (queda un `.img` de ≈ 4 GB).
+### Antes de empezar (quien va a hacer la prueba)
+
+- Una cuenta de Balena con **el correo al que se mandó la invitación**, y haberla aceptado (ver "Dar acceso a la flota").
+- VirtualBox instalado y **≈ 25 GB libres**: el `.zip` (≈ 1.4 GB), el `.img` (≈ 4 GB), el disco convertido (≈ 4 GB) y el disco de la VM (16 GB).
+- La clave MQTT de `dev03`, que entrega Rol 2 por el chat privado.
+- Un cronómetro. Las capturas se toman con el cronómetro detenido, o se anotan las pausas.
+
+### Dar acceso a la flota (lo hace Rol 1, una vez por persona)
+
+No hace falta tener ninguna máquina encendida. Los nombres exactos de los botones pueden cambiar con las versiones del dashboard.
+
+1. Entra a [dashboard.balena-cloud.com](https://dashboard.balena-cloud.com) con la cuenta dueña de la flota (`gh_kevinaristi`).
+2. **Organización:** abre el menú de la organización → **Members** → **Invite member**.
+3. Escribe el **correo** de la persona. Rol de organización: **Member** (no *Administrator*, que le daría control de toda la organización). Pulsa **Invite**.
+4. **Flota:** abre `proyecto5-iot` → pestaña **Members** → agrega a esa persona con el rol **Developer**. *[Verificar: si hay que esperar a que la persona acepte antes de poder agregarla a la flota.]*
+5. La persona abre el correo, **acepta** la invitación (si no tiene cuenta, la crea con **ese mismo correo**) y comprueba que al entrar ve la flota `proyecto5-iot`.
+
+- **Nunca** se comparte la contraseña de la cuenta ni un token de API: solo la invitación.
+- Según la documentación de Balena, *Developer* es el rol de flota que se puede asignar en el plan gratuito. *[Verificar: que ese rol baste para descargar la imagen en A1.]*
+- **Plan B si la persona no puede descargar la imagen:** Rol 1 descarga la imagen de `dev03` (A1) y se la pasa por un canal privado. El `.img` lleva credenciales de la flota: **no va al repositorio** ni a un chat abierto.
+
+### A1. Registrar el dispositivo y descargar la imagen
+
+Dashboard → flota `proyecto5-iot` → **Add device**:
+
+| Opción | Valor |
+|---|---|
+| Device type | **Generic x86_64 (GPT)** |
+| balenaOS | **9.0.4** (Production) |
+| Network | **Solo Ethernet** |
+| Secure Boot | Apagado |
+
+Pulsa **Download** (≈ 1.4 GB) y extrae el `.zip` en una **carpeta nueva** (por ejemplo `C:\p5-vms\dev03\`). Queda un `.img` de ≈ 4 GB.
+
+**Esperado:** un archivo `.img`. El dispositivo aparece en el dashboard solo cuando la VM arranca (A4), no al descargar. **No uses** la imagen de otro dispositivo.
 
 ### A2. Convertir la imagen a disco de VirtualBox
 
 Es un *flasher*: se convierte a un disco propio de ese dispositivo.
 
 ```cmd
-"C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" convertfromraw "RUTA\archivo.img" "C:\p5-vms\dev03-instalador.vdi" --format VDI
+"C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" convertfromraw "C:\p5-vms\dev03\ARCHIVO.img" "C:\p5-vms\dev03-instalador.vdi" --format VDI
 ```
 
-Si da `VERR_FILE_NOT_FOUND`, usa la ruta completa del `.img` o entra a esa carpeta con `cd /d`.
+**Esperado:** avanza hasta `100%` sin errores y crea `dev03-instalador.vdi`. Si da `VERR_FILE_NOT_FOUND`, usa la ruta completa del `.img` o entra a esa carpeta con `cd /d`.
 
 ### A3. Crear la máquina virtual
+
+La forma **probada** es la interfaz de VirtualBox, con estos ajustes:
 
 | Ajuste | Valor |
 |---|---|
@@ -188,7 +229,7 @@ El **disco vacío va primero** (puerto 0) y el instalador segundo; al revés, la
 "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" modifyvm "p5-dev03" --ioapic off --cpus 1
 ```
 
-Comprueba antes de arrancar:
+**Comprueba antes de arrancar:**
 
 ```cmd
 "C:\Program Files\Oracle\VirtualBox\VBoxManage.exe" showvminfo "p5-dev03" --machinereadable | findstr /i "vdi ioapic cpus firmware"
@@ -196,30 +237,67 @@ Comprueba antes de arrancar:
 
 Debes ver firmware `EFI`, `ioapic="off"`, `cpus=1`, el disco propio en el puerto 0 y **el instalador de `dev03`** en el puerto 1 (no el de otro dispositivo).
 
+<details>
+<summary>Alternativa por línea de comandos <b>[sin probar]</b></summary>
+
+Estos comandos hacen lo mismo que la interfaz, pero **no se han ejecutado** en este proyecto. Si prefieres lo probado, usa la interfaz. Si los usas, comprueba el resultado con el `showvminfo` de arriba.
+
+```cmd
+set VB="C:\Program Files\Oracle\VirtualBox\VBoxManage.exe"
+%VB% createvm --name p5-dev03 --ostype Other_64 --register
+%VB% modifyvm p5-dev03 --memory 2048 --cpus 1 --firmware efi --ioapic off --nic1 nat
+%VB% createmedium disk --filename C:\p5-vms\p5-dev03.vdi --size 16384 --format VDI
+%VB% storagectl p5-dev03 --name SATA --add sata
+%VB% storageattach p5-dev03 --storagectl SATA --port 0 --device 0 --type hdd --medium C:\p5-vms\p5-dev03.vdi
+%VB% storageattach p5-dev03 --storagectl SATA --port 1 --device 0 --type hdd --medium C:\p5-vms\dev03-instalador.vdi
+```
+
+</details>
+
 ### A4. Instalar balenaOS
 
 1. Arranca la VM. El dispositivo aparece en el dashboard como *Post provisioning*.
 2. Se graba en el disco y la VM se **apaga sola**.
-3. Quita el instalador del puerto 1 y vuelve a arrancar. En 1–2 minutos pasa a **Online**.
+3. **Quita el instalador del puerto 1** (en la interfaz: Configuración → Almacenamiento → quitar el disco `dev03-instalador.vdi`) y vuelve a arrancar. En 1–2 minutos pasa a **Online**.
 4. Renómbralo a `dev03` en el dashboard.
+
+**Esperado:** `dev03` en **Online** con la misma release que `dev01` y `dev02` (se despliega sola, sin `balena push`). Si no pasa a Online en ≈ 5 min, revisa que el instalador ya no esté conectado y que la VM tenga la red en NAT.
 
 ### A5. Cargar las variables del dispositivo
 
-Dashboard → `dev03` → **Device Variables**:
+Dashboard → `dev03` → **Device Variables** → **Add variable**, una por una:
 
 | Variable | Valor |
 |---|---|
 | `DEVICE_ID` | `dev03` |
 | `MQTT_USER` | `dev03` |
-| `MQTT_PASSWORD` | la clave de `dev03` (**pégala tú en el dashboard**) |
+| `MQTT_PASSWORD` | la clave de `dev03` (**la pegas tú en el dashboard**, nadie más) |
 
-`BROKER_HOST`, `BROKER_PORT`, `CA_CERT_PATH` y `PUBLISH_INTERVAL` ya vienen de la **flota**. La clave de cada dispositivo debe pegarse en *su* dispositivo: si se cruzan, el broker rechaza la conexión por la ACL.
-
-El dispositivo recibe automáticamente la release actual, sin que tengas que hacer `balena push`.
+`BROKER_HOST`, `BROKER_PORT`, `CA_CERT_PATH` y `PUBLISH_INTERVAL` ya vienen de la **flota**; no las repitas. La clave de cada dispositivo debe pegarse en *su* dispositivo: si se cruzan, el broker rechaza la conexión por la ACL. Al guardar, el servicio se reinicia solo (≈ 30 a 60 s).
 
 ### A6. Comprobar
 
-Panel de **Logs** del dispositivo (o `balena device logs <UUID>`): las mismas líneas del Paso 6 de la Ruta B. Luego, el Paso 7.
+Con la VM de Azure **encendida**: dashboard → `dev03` → **Logs** (o `balena device logs <UUID>` si tienes la CLI y sesión iniciada). Debes ver, en este orden:
+
+```
+simulador v3 <hora UTC>
+<hora> [dev03] conectado a 68.211.147.97:8883
+<hora> [dev03] temperatura=24.1
+<hora> [dev03] humedad=61.3
+```
+
+y una pareja nueva cada 5 segundos. Si solo ves `esperando conexion con el broker...`, el broker está apagado o la clave/usuario está mal (ver "Solución de problemas").
+
+### Paso 7. Verlo en Grafana
+
+`dev03` debe aparecer en la variable `device_id` y en los paneles, **sin tocar ningún archivo de `backend/`** (prueba P8.2). Grafana solo abre a las IP del equipo o por túnel SSH:
+
+- Quien tiene la llave SSH de la VM: `ssh -N -L 3000:localhost:3000 -i "%USERPROFILE%\Downloads\practica-iaas-key.pem" azureuser@68.211.147.97` y abrir `http://localhost:3000`.
+- Quien no la tiene: pide a Rol 1 o Rol 2 que le muestre el panel, o que Rol 2 autorice su IP. La llave **no se comparte**.
+
+### Al terminar
+
+Detén la VM con *Machine → ACPI Shutdown* si no se va a usar en la demo. **Esperado:** unos 5 minutos después llega la alerta de offline de `dev03` a Telegram (es el comportamiento correcto, prueba P8.4). Si la VM de Azure ya está apagada, no llega nada.
 
 ---
 
@@ -243,6 +321,9 @@ El dispositivo publica entonces entre 31.5 y 32.5 °C. **Bórrala al terminar** 
 | `conexion rechazada: Not authorized` | Clave equivocada o cruzada con otro dispositivo | Pedir de nuevo la clave y comprobar que corresponde a este `device_id` |
 | `esperando conexion con el broker...` sin fin | Broker apagado o sin salida a internet por el puerto 8883 | Comprobar el Paso 1 y la red |
 | No aparece en el dashboard pero el log está bien | El dashboard aún no lee el dispositivo nuevo o la variable no se actualizó | Actualizar el dashboard y avisar a Rol 4 / Rol 3 |
+| (Ruta A) No ves la flota `proyecto5-iot` tras aceptar la invitación | La invitación a la organización no incluye la flota, o se aceptó con otro correo | Rol 1 te agrega en la flota → Members con rol Developer; comprueba que la cuenta usa el mismo correo invitado |
+| (Ruta A) No te llega la invitación | Correo mal escrito o en spam | Rol 1 la reenvía y verifica el correo; no hace falta que ninguna máquina esté encendida |
+| (Ruta A) Nunca llegas a ver los `Logs` con datos pero `dev03` está Online | Falta `MQTT_PASSWORD` o la VM de Azure está apagada | Revisa las 3 variables del dispositivo y el Paso 1 |
 | (Ruta A) Dos VM con la misma identidad | Se reutilizó la imagen de otro dispositivo | Descargar una imagen nueva por dispositivo |
 | (Ruta A) La VM se queda en el logo | Instalador en el puerto 0 o I/O APIC activo | Disco vacío primero; `--ioapic off --cpus 1` |
 
