@@ -21,6 +21,7 @@ base de R5.3. Los valores salen de [contrato.md](contrato.md).
 | `backend/mosquitto/ca-privada/ca.key` | Clave privada de la CA | **No**, nunca sale de la VM |
 | `backend/mosquitto/generar-certificados.sh` | Crea la CA y el certificado del broker | Sí |
 | `backend/mosquitto/crear-usuario.sh` | Crea, cambia o borra usuarios MQTT | Sí |
+| `backend/grafana/configurar-grafana.py` | Configura Grafana completo (data source, dashboard, alertas) | Sí |
 
 ## 1. Crear la VM en Azure
 
@@ -85,7 +86,8 @@ Llenar:
 - Las claves con valores aleatorios: `openssl rand -base64 18`.
 - `INFLUXDB_ADMIN_TOKEN` con `openssl rand -hex 32`.
 
-`TELEGRAM_*` lo completa el Rol 4 más adelante.
+`TELEGRAM_*` lleva el token del bot y el chat ID de Telegram para las alertas. Los
+dos tokens por servicio de InfluxDB se llenan en el paso 7b.
 
 ## 5. Certificados TLS
 
@@ -121,6 +123,47 @@ docker compose logs mosquitto
 **Cómo comprobarlo:**
 - `ps` muestra los 4 servicios en `running`.
 - El log de Mosquitto dice `Opening ipv4 listen socket on port 8883` y no muestra errores de certificados ni de passwd.
+
+## 7b. Tokens de InfluxDB por servicio
+
+El token admin no se le da a nadie. Node-RED recibe uno que **solo escribe** en
+el bucket `iot` y Grafana uno que **solo lee**:
+
+```bash
+BUCKET_ID=$(docker compose exec -T influxdb influx bucket list --org curso --name iot --hide-headers | cut -f1)
+docker compose exec -T influxdb influx auth create --org curso --description "nodered: escribe en iot" --write-bucket "$BUCKET_ID" --hide-headers | cut -f3
+docker compose exec -T influxdb influx auth create --org curso --description "grafana: lee iot" --read-bucket "$BUCKET_ID" --hide-headers | cut -f3
+```
+
+El primer token va en `INFLUXDB_NODERED_TOKEN` y el segundo en
+`INFLUXDB_GRAFANA_TOKEN` del `.env`. Luego `docker compose up -d` (recrea solo
+los contenedores cuyas variables cambiaron; los datos están en volúmenes).
+
+**Cómo comprobarlo:** `docker compose exec -T influxdb influx auth list` muestra
+`write:.../buckets/<id>` para Node-RED y `read:.../buckets/<id>` para Grafana.
+Escribir con el token de Grafana da `403 Forbidden`.
+
+## 7c. Grafana en un solo paso
+
+Con `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` ya en el `.env`:
+
+```bash
+python3 grafana/configurar-grafana.py
+```
+
+[configurar-grafana.py](../backend/grafana/configurar-grafana.py) crea el data
+source de InfluxDB (Flux, token de solo lectura), la carpeta *Proyecto 5*, el
+dashboard, el contact point `Telegram`, las reglas de alerta y la política de
+notificaciones. Los toma de `backend/grafana/` y los crea con los mismos UID de
+esos JSON: si el data source se crea a mano en la interfaz, Grafana le da otro
+UID y los paneles y las alertas quedan sin datos. Solo crea lo que falta, así
+que se puede correr varias veces. Si `TELEGRAM_*` todavía tiene los valores de
+ejemplo, crea el contact point vacío y avisa; se completa luego en
+*Alerting → Contact points*.
+
+Probado el 2026-11-16 en un Grafana 11.3.0 y un InfluxDB 2.7 nuevos (contenedores
+de prueba en la VM): el data source responde `OK`, las dos reglas quedan con
+salud `ok` y una segunda corrida no duplica nada.
 
 ## La VM queda apagada cuando no se usa
 
