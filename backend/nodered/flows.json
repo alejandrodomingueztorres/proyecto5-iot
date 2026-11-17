@@ -122,7 +122,8 @@
         "wires": [
             [
                 "p5influxout0001",
-                "p5debuglect001"
+                "p5debuglect001",
+                "p5alertatg0001"
             ],
             [
                 "p5influxout0001",
@@ -236,6 +237,77 @@
         "targetType": "full",
         "x": 300,
         "y": 260,
+        "wires": []
+    },
+    {
+        "id": "p5alertatg0001",
+        "type": "function",
+        "z": "p5tab0000000001",
+        "name": "Alerta Telegram",
+        "func": "// Plan B de R5.6: alerta directa a Telegram desde Node-RED.\n// Entra la salida \"lecturas\" de Validar y transformar: payload = [campos, tags].\nconst campos = msg.payload[0];\nconst tags = msg.payload[1];\nif (!campos.alerta) return null;\n// Una alerta por dispositivo cada ALERTA_ESPERA_SEG (120 s por defecto) para no saturar el chat\nconst espera = Number(env.get(\"ALERTA_ESPERA_SEG\") || 120) * 1000;\nconst clave = \"ultima_\" + tags.device_id;\nif (Date.now() - (context.get(clave) || 0) < espera) return null;\ncontext.set(clave, Date.now());\nconst token = env.get(\"TELEGRAM_BOT_TOKEN\");\nconst chat = env.get(\"TELEGRAM_CHAT_ID\");\nif (!token || !chat) { node.warn(\"Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID\"); return null; }\nmsg.url = \"https://api.telegram.org/bot\" + token + \"/sendMessage\";\nmsg.method = \"POST\";\nmsg.headers = { \"Content-Type\": \"application/json\" };\nmsg.payload = {\n    chat_id: chat,\n    text: \"🌡️ Alerta: \" + tags.device_id + \" temperatura \" + campos.value + \" °C (umbral \" +\n          (env.get(\"UMBRAL_TEMPERATURA\") || 30) + \" °C) · \" + new Date(campos.time).toISOString()\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 340,
+        "wires": [
+            [
+                "p5httptg000001"
+            ]
+        ]
+    },
+    {
+        "id": "p5httptg000001",
+        "type": "http request",
+        "z": "p5tab0000000001",
+        "name": "Enviar a Telegram",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 580,
+        "y": 340,
+        "wires": [
+            [
+                "p5debugtg00001"
+            ]
+        ]
+    },
+    {
+        "id": "p5debugtg00001",
+        "type": "debug",
+        "z": "p5tab0000000001",
+        "name": "respuesta Telegram",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.ok",
+        "statusType": "msg",
+        "x": 800,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "p5comenttg0001",
+        "type": "comment",
+        "z": "p5tab0000000001",
+        "name": "Plan B R5.6: alerta directa a Telegram (< 30 s)",
+        "info": "Usa TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, UMBRAL_TEMPERATURA y ALERTA_ESPERA_SEG del entorno. El debug muestra solo msg.payload porque msg.url contiene el token.",
+        "x": 220,
+        "y": 300,
         "wires": []
     }
 ]
