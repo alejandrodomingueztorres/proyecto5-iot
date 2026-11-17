@@ -145,7 +145,9 @@ Cada comando imprime un token: el primero va en `INFLUXDB_NODERED_TOKEN` y el se
 [backend/nodered/flows.json](backend/nodered/flows.json), escribir las credenciales como
 variables (`${MQTT_NODERED_USER}`, `${MQTT_NODERED_PASSWORD}`, `${INFLUXDB_TOKEN}`) y pulsar
 **Deploy**. Paso a paso con capturas en [backend/nodered/README.md](backend/nodered/README.md).
-Comprobar: debajo del nodo `iot/+/+` dice **connected**.
+Comprobar: debajo del nodo `iot/+/+` dice **connected**. La alerta directa de Node-RED a
+Telegram usa su propio bot y chat, `NODERED_TELEGRAM_BOT_TOKEN` y `NODERED_TELEGRAM_CHAT_ID` del
+`.env`, distintos de los de Grafana para que las alertas no lleguen repetidas.
 
 **1.9 Grafana (dashboard y alertas).** Para las alertas por Telegram, poner antes el token del
 bot y el chat ID en `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` del `.env`. Luego, un solo comando:

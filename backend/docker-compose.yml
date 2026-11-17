@@ -58,8 +58,11 @@ services:
       INFLUXDB_BUCKET: ${INFLUXDB_BUCKET}
       # Token solo de escritura sobre el bucket iot (contrato, sección 4).
       INFLUXDB_TOKEN: ${INFLUXDB_NODERED_TOKEN:-}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      # Bot y chat propios de Node-RED (alerta directa, plan B de R5.6), separados de los
+      # de Grafana para que las alertas no lleguen repetidas al mismo chat. Dentro del
+      # contenedor conservan los nombres TELEGRAM_*, que son los que lee el flujo.
+      TELEGRAM_BOT_TOKEN: ${NODERED_TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${NODERED_TELEGRAM_CHAT_ID:-}
     volumes:
       - nodered_data:/data
       # ca.crt para conectarse al broker con TLS. server.key también queda en
