@@ -63,9 +63,7 @@
         "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
-            "min",
-            "max",
-            "mean"
+            "min", "max", "mean"
           ],
           "fields": "",
           "values": false
@@ -547,13 +545,13 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Dashboard Oficial (Grafana 11)",
   "uid": "p5-dashboard-g11",
-  "version": 14,
+  "version": 11,
   "weekStart": ""
 }
