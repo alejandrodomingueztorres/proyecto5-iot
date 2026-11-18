@@ -185,14 +185,15 @@ La VM del proyecto (`vm-iot-backend`, IP `68.211.147.97`) además se apaga sola 
 
 ```bash
 balena login
-scp azureuser@<IP>:proyecto5-iot/backend/mosquitto/config/certs/ca.crt device/ca.crt   # la CA del paso 1.5; sin ella el build falla
+# Solo si en el paso 1.5 se generó una CA nueva: copiar su ca.crt (backend/mosquitto/config/certs/ca.crt) a device/ca.crt
+scp -i <ruta-de-tu-llave-ssh> azureuser@<IP>:proyecto5-iot/backend/mosquitto/config/certs/ca.crt device/ca.crt
 cd device
 balena push <usuario-balena>/proyecto5-iot
 ```
 
 Comprobar: termina con el unicornio de Balena y en el dashboard aparece una release nueva. Cada `balena push` posterior es una actualización OTA: los dispositivos la descargan solos.
 
-**2.3 Agregar cada dispositivo** (`dev01`, `dev02`, `dev03`…). En *Device Variables* de cada uno van `DEVICE_ID`, `MQTT_USER` (los dos con su nombre, por ejemplo `dev01`) y `MQTT_PASSWORD` (la clave que mostró `crear-usuario.sh` en el paso 1.5). Comprobar: el dispositivo queda **Online** y su log dice que publica.
+**2.3 Agregar cada dispositivo** (`dev01`, `dev02`, `dev03`…). Primero se registra y se instala con los pasos A1 a A4 de la [guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md). Luego, en *Device Variables* de cada uno van `DEVICE_ID`, `MQTT_USER` (los dos con su nombre, por ejemplo `dev01`) y `MQTT_PASSWORD` (la clave que mostró `crear-usuario.sh` en el paso 1.5). Comprobar: el dispositivo queda **Online** y su log dice que publica.
 
 Cada dispositivo es un contenedor con el simulador de [`device/`](device/). Hay dos formas de crear uno, las dos descritas paso a paso en la **[guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md)**:
 
