@@ -1,4 +1,4 @@
-# Node-RED — Rol 3 (R5.4)
+# Node-RED — Rol 3 (R5.4 y plan B de R5.6)
 
 Node-RED recibe todos los mensajes MQTT de los dispositivos, los valida según el [contrato](../../docs/contrato.md) y los guarda en InfluxDB.
 
@@ -9,6 +9,9 @@ Mosquitto (8883, TLS) ──► iot/+/+ ──► Validar y transformar ──�
                                                                         │
                                                                         ▼
                                                                InfluxDB · bucket iot
+
+lecturas con alerta=1 ──► Alerta Telegram ──► Enviar a Telegram ──► respuesta Telegram
+                          (1 aviso por dispositivo cada 120 s)   (API sendMessage)
 ```
 
 | Archivo | Contenido |
@@ -25,6 +28,9 @@ Evidencia de las pruebas: [docs/evidencias/R5.4.md](../../docs/evidencias/R5.4.m
 | `Validar y transformar` | Revisa el JSON, los campos, los tipos, la unidad, el rango físico (temperatura −20 a 80 °C, humedad 0 a 100 %) y que `device_id` y `sensor` coincidan con el topic. Marca `alerta = 1` si la temperatura supera `UMBRAL_TEMPERATURA` (30 °C por defecto) |
 | `Bucket iot` | Escribe en InfluxDB las mediciones `lecturas`, `estado` y `descartados` |
 | `lecturas`, `estado`, `descartados`, `errores` | Nodos de depuración para ver qué pasa en el panel debug |
+| `Alerta Telegram` | Plan B de R5.6. Recibe las lecturas y, si traen `alerta = 1`, arma el mensaje para la API de Telegram. Envía como máximo un aviso por dispositivo cada `ALERTA_ESPERA_SEG` segundos |
+| `Enviar a Telegram` | Nodo *http request* que hace el `POST` a `sendMessage` (método y URL los pone el nodo anterior) |
+| `respuesta Telegram` | Muestra **solo** `msg.payload` (`ok: true` y la hora `date`). No se muestra el mensaje completo porque `msg.url` contiene el token del bot |
 
 El punto se guarda con la hora del campo `ts` del mensaje, no con la hora de llegada.
 
@@ -42,6 +48,10 @@ Las define `backend/docker-compose.yml` en el servicio `nodered`, a partir del `
 | `INFLUXDB_ORG` / `INFLUXDB_BUCKET` | Organización y bucket | `curso` / `iot` |
 | `INFLUXDB_TOKEN` | Token de escritura de InfluxDB | del `.env` |
 | `UMBRAL_TEMPERATURA` | (Opcional) Umbral de alerta en °C | `30` si no se define |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot y chat que reciben la alerta directa | del `.env` (los del bot del grupo) |
+| `ALERTA_ESPERA_SEG` | (Opcional) Segundos mínimos entre dos alertas del mismo dispositivo | `120` si no se define |
+
+`TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` ya los pasa el `docker-compose.yml`. `UMBRAL_TEMPERATURA` y `ALERTA_ESPERA_SEG` usan su valor por defecto; para cambiarlos (por ejemplo en P6.3) el Rol 2 los agrega al servicio `nodered` y reinicia con `docker compose up -d nodered`. No se toca el código.
 
 ## Instalación paso a paso
 
@@ -97,6 +107,21 @@ from(bucket: "iot")
 
 Deben aparecer filas de cada dispositivo, con `device_id`, `sensor` y `value`.
 
+### 7. Probar la alerta directa a Telegram (R5.6, plan B)
+
+1. Comprueba que Node-RED tiene el bot, sin mostrar el token (por SSH en la VM):
+
+   ```bash
+   docker compose exec nodered sh -c 'echo ${TELEGRAM_BOT_TOKEN%%:*}; echo $TELEGRAM_CHAT_ID'
+   ```
+
+   Deben salir dos números. Si sale vacío, el Rol 2 debe completar el `.env`.
+2. Publica una temperatura mayor que el umbral (por ejemplo 35 °C, ver la sección siguiente).
+3. Debe llegar al chat el mensaje `🌡️ Alerta: dev01 temperatura 35 °C (umbral 30 °C) · <hora>`, y en el panel debug `respuesta Telegram` muestra `ok: true`.
+4. Para medir P6.2 con segundos: compara el `ts` del mensaje publicado con `result.date` de `respuesta Telegram` (hora Unix en segundos, UTC).
+
+Si se publican varias alertas seguidas del mismo dispositivo, solo sale una cada `ALERTA_ESPERA_SEG` segundos. Para P6.2 espera 2 minutos entre intentos.
+
 ## Enviar mensajes de prueba
 
 Desde un PC con Docker, con el `ca.crt` del broker en la carpeta personal (`~/ca.crt`) y la clave del dispositivo leída sin escribirla en el comando:
@@ -145,4 +170,8 @@ grep -iE '"(password|token|user)"' backend/nodered/flows.json
 | *"nodes already exist"* al importar | Solo choca la pestaña vacía *Flow 1* | Desmarcar *Flow 1* → **Import selected** |
 | InfluxDB: *organization not found* | La pestaña del navegador apunta a una organización vieja (después de recrear el contenedor) | Abrir de nuevo `http://<IP>:8086` y entrar a Data Explorer desde el menú |
 | Un mensaje de prueba no aparece en InfluxDB | Se reutilizó un `TS` y el punto se sobrescribió | Generar un `TS` nuevo y volver a enviar |
+| `respuesta Telegram` muestra `ok: false`, `401 Unauthorized` | Token del bot incorrecto o revocado | Revisar `TELEGRAM_BOT_TOKEN` en el `.env` y reiniciar Node-RED |
+| `respuesta Telegram` muestra `400 chat not found` | El chat no le ha escrito al bot, o el `TELEGRAM_CHAT_ID` está mal | Enviar `/start` al bot (o agregarlo al grupo) y revisar el ID |
+| Warning *"Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"* | Las variables no llegaron al contenedor | Completar el `.env` y `docker compose up -d nodered` |
+| No llega una segunda alerta | La espera entre alertas del mismo dispositivo (120 s) todavía no ha pasado | Esperar 2 minutos |
 | Mensajes en `descartados` | El mensaje no cumple el contrato | Ver el campo `motivo`: fuera de rango, no es JSON, unidad incorrecta, etc. |
