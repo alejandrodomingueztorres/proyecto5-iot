@@ -295,6 +295,6 @@ proyecto5-iot/
 |---|---|
 | Repositorio con código, configuración y guía paso a paso | ✅ Entregado |
 | Diapositivas ([PDF](diapositivas/presentacion-proyecto5-iot.pdf)) | ✅ Entregado |
-| Presentación y demo en vivo (máximo 20 minutos) | 🟨 En progreso · [video de respaldo](https://github.com/alejandrodomingueztorres/proyecto5-iot/releases/download/entrega/Demo-respaldo-P5-completo.mp4) |
+| Presentación y demo en vivo (máximo 20 minutos) | ✅ Entregado · [video de respaldo](https://github.com/alejandrodomingueztorres/proyecto5-iot/releases/download/entrega/Demo-respaldo-P5-completo.mp4) |
 
 Fecha de entrega: **18 de noviembre de 2026**.
