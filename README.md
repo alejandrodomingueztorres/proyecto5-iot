@@ -171,9 +171,33 @@ La VM del proyecto (`vm-iot-backend`, IP `68.211.147.97`) además se apaga sola 
 11 pm (ver [docs/rol2-infraestructura.md](docs/rol2-infraestructura.md)).
 
 ### 2. Dispositivos
+
+**2.1 Flota en BalenaCloud (una sola vez).** En [dashboard.balena-cloud.com](https://dashboard.balena-cloud.com): *Create fleet*, nombre `proyecto5-iot`, tipo **Generic x86_64 (GPT)**. En *Variables* de la flota:
+
+| Variable | Valor |
+|---|---|
+| `BROKER_HOST` | IP de la VM de Azure (paso 1.1) |
+| `BROKER_PORT` | `8883` |
+| `CA_CERT_PATH` | `/app/ca.crt` |
+| `PUBLISH_INTERVAL` | `5` |
+
+**2.2 Subir el simulador a la flota.** En el PC, con la [balena CLI](https://github.com/balena-io/balena-cli) instalada, desde la raíz del repositorio:
+
+```bash
+balena login
+# Solo si en el paso 1.5 se generó una CA nueva: copiar su ca.crt (backend/mosquitto/config/certs/ca.crt) a device/ca.crt
+scp -i <ruta-de-tu-llave-ssh> azureuser@<IP>:proyecto5-iot/backend/mosquitto/config/certs/ca.crt device/ca.crt
+cd device
+balena push <usuario-balena>/proyecto5-iot
+```
+
+Comprobar: termina con el unicornio de Balena y en el dashboard aparece una release nueva. Cada `balena push` posterior es una actualización OTA: los dispositivos la descargan solos.
+
+**2.3 Agregar cada dispositivo** (`dev01`, `dev02`, `dev03`…). Primero se registra y se instala con los pasos A1 a A4 de la [guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md). Luego, en *Device Variables* de cada uno van `DEVICE_ID`, `MQTT_USER` (los dos con su nombre, por ejemplo `dev01`) y `MQTT_PASSWORD` (la clave que mostró `crear-usuario.sh` en el paso 1.5). Comprobar: el dispositivo queda **Online** y su log dice que publica.
+
 Cada dispositivo es un contenedor con el simulador de [`device/`](device/). Hay dos formas de crear uno, las dos descritas paso a paso en la **[guía de dispositivo nuevo](docs/guia-nuevo-dispositivo.md)**:
 
-- **BalenaCloud + VirtualBox (principal):** la usada para `dev01` y `dev02`; es la tecnología que pide el proyecto para gestionar dispositivos. Necesita acceso a la flota de Balena.
+- **BalenaCloud + VirtualBox (principal):** la usada para `dev01` y `dev02`; es la tecnología que pide el proyecto para gestionar dispositivos. Necesita acceso a la flota de Balena (pasos A1–A6 de la guía).
 - **Docker (alternativa rápida, plan B):** necesita Docker, este repositorio y la clave MQTT del dispositivo (la entrega el Rol 2 por el chat privado del grupo).
 
 Con Docker, resumido (los detalles y la forma segura de cargar la clave están en la guía):
@@ -269,8 +293,8 @@ proyecto5-iot/
 
 | Entregable | Estado |
 |---|---|
-| Repositorio con código, configuración y guía paso a paso | 🟨 En progreso |
-| Diapositivas (carpeta `diapositivas/`) | ⬜ Pendiente |
-| Presentación y demo en vivo (máximo 20 minutos) | ⬜ Pendiente |
+| Repositorio con código, configuración y guía paso a paso | ✅ Entregado |
+| Diapositivas ([PDF](diapositivas/presentacion-proyecto5-iot.pdf)) | ✅ Entregado |
+| Presentación y demo en vivo (máximo 20 minutos) | 🟨 En progreso · [video de respaldo](https://github.com/alejandrodomingueztorres/proyecto5-iot/releases/download/entrega/Demo-respaldo-P5-completo.mp4) |
 
 Fecha de entrega: **18 de noviembre de 2026**.
