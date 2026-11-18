@@ -48,10 +48,10 @@ Las define `backend/docker-compose.yml` en el servicio `nodered`, a partir del `
 | `INFLUXDB_ORG` / `INFLUXDB_BUCKET` | Organización y bucket | `curso` / `iot` |
 | `INFLUXDB_TOKEN` | Token de escritura de InfluxDB | del `.env` |
 | `UMBRAL_TEMPERATURA` | (Opcional) Umbral de alerta en °C | `30` si no se define |
-| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot y chat que reciben la alerta directa | del `.env` (los del bot del grupo) |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Bot y chat que reciben la alerta directa | del `.env`: `NODERED_TELEGRAM_BOT_TOKEN` y `NODERED_TELEGRAM_CHAT_ID` (bot `@p5_nodered_alertas_bot`, grupo "Alertas Node-RED P5") |
 | `ALERTA_ESPERA_SEG` | (Opcional) Segundos mínimos entre dos alertas del mismo dispositivo | `120` si no se define |
 
-`TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` ya los pasa el `docker-compose.yml`. `UMBRAL_TEMPERATURA` y `ALERTA_ESPERA_SEG` usan su valor por defecto; para cambiarlos (por ejemplo en P6.3) el Rol 2 los agrega al servicio `nodered` y reinicia con `docker compose up -d nodered`. No se toca el código.
+Node-RED usa un bot y un chat propios, separados de los de Grafana (que sigue con `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`), para que las alertas no lleguen repetidas al mismo chat. En el `docker-compose.yml`, el servicio `nodered` toma `TELEGRAM_BOT_TOKEN: ${NODERED_TELEGRAM_BOT_TOKEN:-}` y `TELEGRAM_CHAT_ID: ${NODERED_TELEGRAM_CHAT_ID:-}`; dentro del flujo siguen llamándose `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`. `UMBRAL_TEMPERATURA` y `ALERTA_ESPERA_SEG` usan su valor por defecto; para cambiarlos (por ejemplo en P6.3) el Rol 2 los agrega al servicio `nodered` y reinicia con `docker compose up -d nodered`. No se toca el código.
 
 ## Instalación paso a paso
 
@@ -115,7 +115,7 @@ Deben aparecer filas de cada dispositivo, con `device_id`, `sensor` y `value`.
    docker compose exec nodered sh -c 'echo ${TELEGRAM_BOT_TOKEN%%:*}; echo $TELEGRAM_CHAT_ID'
    ```
 
-   Deben salir dos números. Si sale vacío, el Rol 2 debe completar el `.env`.
+   Deben salir dos números. Si sale vacío, el Rol 2 debe completar `NODERED_TELEGRAM_BOT_TOKEN` y `NODERED_TELEGRAM_CHAT_ID` en el `.env`.
 2. Publica una temperatura mayor que el umbral (por ejemplo 35 °C, ver la sección siguiente).
 3. Debe llegar al chat el mensaje `🌡️ Alerta: dev01 temperatura 35 °C (umbral 30 °C) · <hora>`, y en el panel debug `respuesta Telegram` muestra `ok: true`.
 4. Para medir P6.2 con segundos: compara el `ts` del mensaje publicado con `result.date` de `respuesta Telegram` (hora Unix en segundos, UTC).
@@ -170,8 +170,8 @@ grep -iE '"(password|token|user)"' backend/nodered/flows.json
 | *"nodes already exist"* al importar | Solo choca la pestaña vacía *Flow 1* | Desmarcar *Flow 1* → **Import selected** |
 | InfluxDB: *organization not found* | La pestaña del navegador apunta a una organización vieja (después de recrear el contenedor) | Abrir de nuevo `http://<IP>:8086` y entrar a Data Explorer desde el menú |
 | Un mensaje de prueba no aparece en InfluxDB | Se reutilizó un `TS` y el punto se sobrescribió | Generar un `TS` nuevo y volver a enviar |
-| `respuesta Telegram` muestra `ok: false`, `401 Unauthorized` | Token del bot incorrecto o revocado | Revisar `TELEGRAM_BOT_TOKEN` en el `.env` y reiniciar Node-RED |
-| `respuesta Telegram` muestra `400 chat not found` | El chat no le ha escrito al bot, o el `TELEGRAM_CHAT_ID` está mal | Enviar `/start` al bot (o agregarlo al grupo) y revisar el ID |
-| Warning *"Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"* | Las variables no llegaron al contenedor | Completar el `.env` y `docker compose up -d nodered` |
+| `respuesta Telegram` muestra `ok: false`, `401 Unauthorized` | Token del bot incorrecto o revocado | Revisar `NODERED_TELEGRAM_BOT_TOKEN` en el `.env` y reiniciar Node-RED |
+| `respuesta Telegram` muestra `400 chat not found` | El chat no le ha escrito al bot, o el `TELEGRAM_CHAT_ID` está mal | Agregar el bot al grupo, enviar `/start@<bot>` y revisar `NODERED_TELEGRAM_CHAT_ID` (si el grupo pasó a supergrupo, el ID cambia a `-100…`) |
+| Warning *"Faltan TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID"* | Las variables no llegaron al contenedor | Completar `NODERED_TELEGRAM_*` en el `.env` y `docker compose up -d nodered` |
 | No llega una segunda alerta | La espera entre alertas del mismo dispositivo (120 s) todavía no ha pasado | Esperar 2 minutos |
 | Mensajes en `descartados` | El mensaje no cumple el contrato | Ver el campo `motivo`: fuera de rango, no es JSON, unidad incorrecta, etc. |
