@@ -33,8 +33,8 @@
 | Minuto | Quién | Qué dice | Qué muestra o hace |
 |---|---|---|---|
 | 0:00 a 1:30 | **Rol 5** (Alejandro D.) | El problema y la arquitectura completa | Diagrama del README; tabla de requerimientos |
-| 1:30 a 4:15 | **Rol 1** (Kevin) | Flota en BalenaCloud, simulador en Docker y variables por dispositivo | Flota con `dev01` y `dev02` Online; sus variables (clave oculta); log del simulador; releases con los tiempos de OTA |
-| 4:15 a 6:45 | **Rol 2** (Santiago) | Backend en Azure con Docker Compose; broker Mosquitto con TLS, usuarios y permisos por dispositivo | `docker compose ps` en la VM; captura de Wireshark con TLS 1.3 (R5.2); esquema de topics (R5.3) |
+| 1:30 a 4:00 | **Rol 2** (Santiago) | Backend en Azure con Docker Compose; broker Mosquitto con TLS, usuarios y permisos por dispositivo | `docker compose ps` en la VM; captura de Wireshark con TLS 1.3 (R5.2); esquema de topics (R5.3) |
+| 4:00 a 6:45 | **Rol 1** (Kevin) | Flota en BalenaCloud, simulador en Docker y variables por dispositivo | Flota con `dev01` y `dev02` Online; sus variables (clave oculta); log del simulador; releases con los tiempos de OTA |
 | **6:45** | **Rol 1** | "Voy a apagar `dev02` ahora; en 5 minutos la alerta debe llegar" | ***Power off* de `p5-dev02`** y anotar la hora en voz alta |
 | 6:45 a 9:15 | **Rol 3** (Isabella) | Node-RED valida, descarta lo inválido y guarda en InfluxDB | Flujo; publicar un mensaje inválido con `mosquitto_pub` y ver el descarte; datos en InfluxDB |
 | 9:15 a 10:45 | **Rol 4** (Boris) | Dashboard con 6 paneles y la variable `device_id` | Panel con `All`, luego `dev01`; refresco en vivo |
@@ -56,7 +56,7 @@
 El riesgo de la demo está en los tiempos de espera, no en la explicación:
 
 ```
-66:45   Kevin apaga dev02 (power off), al terminar Santiago
+6:45   Kevin apaga dev02 (power off)
        ├─ el panel de Grafana ya lo muestra OFFLINE al instante (Last Will)
        └─ la ALERTA llega ≈ 5 min después de su último dato → ≈ 11:50
 10:45  Kevin pone TEMP_FORZADA=35 en dev01 → alerta ≈ 25 a 35 s después
@@ -71,14 +71,14 @@ El riesgo de la demo está en los tiempos de espera, no en la explicación:
 
 **Rol 5, Alejandro Domínguez (apertura y cierre).** Un sistema IoT de punta a punta: dispositivos → MQTT con TLS → Node-RED → InfluxDB → Grafana → Telegram, y BalenaCloud para gestionar la flota. Cada rol trabajó en su rama y todo entró por pull request con aprobación de otra persona; cada requerimiento tiene su ficha de evidencia con capturas y tiempos.
 
+**Rol 2, Santiago Osorio.** Una VM de Azure con IP fija y cuatro contenedores (Mosquitto, Node-RED, InfluxDB, Grafana). Solo el puerto 8883 está abierto al público (P2.8); el tráfico va cifrado con TLS 1.3 (Wireshark, P2.7) y cada dispositivo solo puede publicar en `iot/<su_id>/#`. Esquema de topics `iot/{device_id}/{sensor}`.
+
 **Rol 1, Kevin Aristizabal.**
 - *Qué hice:* dos dispositivos simulados (VM con balenaOS en VirtualBox) registrados en una flota de BalenaCloud. Todos corren la **misma imagen**; lo que cambia son las variables (`DEVICE_ID`, `MQTT_USER`, `MQTT_PASSWORD`). Las claves nunca están en el repositorio.
 - *OTA:* con un `balena push` se actualizaron los dos dispositivos sin tocar las VM: **41 s** la primera vez y **258 s** la segunda (no investigué la diferencia).
 - *Last Will:* al cortar la red de `dev01`, el broker publicó `offline` a los **46 s**, y `online` a los 21 s de reconectar.
 - *Alertas:* para probar R5.6 y R5.7 con un dispositivo real agregué la variable opcional `TEMP_FORZADA`: con ella `dev01` publica 32 a 35 °C sin tocar la VM. Con las reglas corregidas, la alerta de temperatura llega ≈ 25 a 35 s después y la de offline pasados los 5 minutos.
 - *Qué aprendí:* encontré que la regla de offline estaba invertida y la corregí; también que el contenedor de Mosquitto no arrancaba solo con la VM.
-
-**Rol 2, Santiago Osorio.** Una VM de Azure con IP fija y cuatro contenedores (Mosquitto, Node-RED, InfluxDB, Grafana). Solo el puerto 8883 está abierto al público (P2.8); el tráfico va cifrado con TLS 1.3 (Wireshark, P2.7) y cada dispositivo solo puede publicar en `iot/<su_id>/#`. Esquema de topics `iot/{device_id}/{sensor}`.
 
 **Rol 3, Isabella Castañeda.** Node-RED se suscribe a `iot/+/+` (un dispositivo nuevo no requiere cambios), valida rangos (temperatura de −20 a 80 °C, humedad de 0 a 100 %) y la hora en UTC, y separa las salidas en `lecturas`, `estado` y `descartados`. Marca `alerta = 1` si la temperatura supera 30 °C.
 
@@ -88,8 +88,8 @@ El riesgo de la demo está en los tiempos de espera, no en la explicación:
 
 1. Título, equipo y roles.
 2. Arquitectura (el diagrama del README).
-3. Dispositivos y BalenaCloud: flota, variables y OTA (con los tiempos).
-4. Backend y seguridad: Azure, Mosquitto con TLS, usuarios y ACL.
+3. Backend y seguridad: Azure, Mosquitto con TLS, usuarios y ACL.
+4. Dispositivos y BalenaCloud: flota, variables y OTA (con los tiempos).
 5. Procesamiento: Node-RED e InfluxDB (reglas de validación).
 6. Grafana y alertas: paneles, umbrales y los tiempos medidos.
 7. Dispositivo nuevo (R5.8) y escalado (2, 10 y 50).
